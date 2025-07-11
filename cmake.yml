@@ -89,7 +89,7 @@ on:
       reviewers:
         description: "Reviewers for PR"
         required: false
-        default: "JunaMeinhold"
+        default: ""
         type: string
       linux-deps:
         description: "Space-separated list of Ubuntu packages to install before build."
