@@ -240,7 +240,15 @@ jobs:
           fi
       - name: Pre-Configure Setup
         if: inputs.pre-configure-steps != ''
-        run: ${{ inputs.pre-configure-steps }}
+        shell: bash
+        run: |
+          export GHA_OS=${{matrix.os}}
+          export GHA_OS_NAME=${{matrix.os-name}}
+          export GHA_ARCH=${{matrix.arch}}
+          export GHA_CMAKE_ARCH=${{matrix.cmake-arch}}
+          export GHA_CMAKE_RTID=${{matrix.rtid}}
+          export GHA_CMAKE_VCPKG_TRIPLET=${{matrix.vcpkg-triplet}}
+          ${{ inputs.pre-configure-steps }}
       - name: Configure with CMake for Linux
         if: matrix.os-name == 'linux'
         run: |
@@ -271,14 +279,30 @@ jobs:
           fi
       - name: Pre-Build Setup
         if: inputs.pre-build-steps != ''
-        run: ${{ inputs.pre-build-steps }}
+        shell: bash
+        run: | 
+          export GHA_OS=${{matrix.os}}
+          export GHA_OS_NAME=${{matrix.os-name}}
+          export GHA_ARCH=${{matrix.arch}}
+          export GHA_CMAKE_ARCH=${{matrix.cmake-arch}}
+          export GHA_CMAKE_RTID=${{matrix.rtid}}
+          export GHA_CMAKE_VCPKG_TRIPLET=${{matrix.vcpkg-triplet}}
+          ${{ inputs.pre-build-steps }}
       - name: Build
         run: |
           cd ${{ inputs.repo-path }}
           cmake --build ./build --config Release
       - name: Post-Build Steps
         if: inputs.post-build-steps != ''
-        run: ${{ inputs.post-build-steps }}
+        shell: bash
+        run: | 
+          export GHA_OS=${{matrix.os}}
+          export GHA_OS_NAME=${{matrix.os-name}}
+          export GHA_ARCH=${{matrix.arch}}
+          export GHA_CMAKE_ARCH=${{matrix.cmake-arch}}
+          export GHA_CMAKE_RTID=${{matrix.rtid}}
+          export GHA_CMAKE_VCPKG_TRIPLET=${{matrix.vcpkg-triplet}}
+          ${{ inputs.post-build-steps }}
       - name: Normalize binaries for macOS
         if: matrix.os-name == 'macos'
         run: |
@@ -350,7 +374,26 @@ jobs:
           echo "VCPKG_TOOLCHAIN_FILE=./vcpkg/scripts/buildsystems/vcpkg.cmake" >> $GITHUB_ENV
       - name: Pre-Configure Setup (Android)
         if: inputs.pre-configure-steps != ''
-        run: ${{ inputs.pre-configure-steps }}
+        shell: bash
+        run: | 
+          export GHA_OS=ubuntu-latest
+          export GHA_OS_NAME=android
+          export GHA_ARCH=arm64
+          export GHA_CMAKE_ARCH=arm64-v8a
+          export GHA_CMAKE_RTID=android-arm64
+          export GHA_CMAKE_VCPKG_TRIPLET=arm64-android
+          export GHA_ANDROID_API=${{ inputs.android-api }}
+          export GHA_ANDROID_NDK=${{ inputs.ndk-version }}
+          ${{ inputs.pre-configure-steps }}
+          export GHA_OS=ubuntu-latest
+          export GHA_OS_NAME=android
+          export GHA_ARCH=x86_64
+          export GHA_CMAKE_ARCH=x86_64
+          export GHA_CMAKE_RTID=android-x64
+          export GHA_CMAKE_VCPKG_TRIPLET=x64-android
+          export GHA_ANDROID_API=${{ inputs.android-api }}
+          export GHA_ANDROID_NDK=${{ inputs.ndk-version }}
+          ${{ inputs.pre-configure-steps }}
       - name: Configure for arm64-v8a
         run: |
           cd ${{ inputs.repo-path }}
@@ -369,7 +412,26 @@ jobs:
           fi
       - name: Pre-Build Setup (Android)
         if: inputs.pre-build-steps != ''
-        run: ${{ inputs.pre-build-steps }}
+        shell: bash
+        run: | 
+          export GHA_OS=ubuntu-latest
+          export GHA_OS_NAME=android
+          export GHA_ARCH=arm64
+          export GHA_CMAKE_ARCH=arm64-v8a
+          export GHA_CMAKE_RTID=android-arm64
+          export GHA_CMAKE_VCPKG_TRIPLET=arm64-android
+          export GHA_ANDROID_API=${{ inputs.android-api }}
+          export GHA_ANDROID_NDK=${{ inputs.ndk-version }}
+          ${{ inputs.pre-build-steps }}
+          export GHA_OS=ubuntu-latest
+          export GHA_OS_NAME=android
+          export GHA_ARCH=x86_64
+          export GHA_CMAKE_ARCH=x86_64
+          export GHA_CMAKE_RTID=android-x64
+          export GHA_CMAKE_VCPKG_TRIPLET=x64-android
+          export GHA_ANDROID_API=${{ inputs.android-api }}
+          export GHA_ANDROID_NDK=${{ inputs.ndk-version }}
+          ${{ inputs.pre-build-steps }}
       - name: Build
         run: |
           cd ${{ inputs.repo-path }}
@@ -377,7 +439,26 @@ jobs:
           cmake --build ./build/x86_64 --config Release
       - name: Post-Build Steps (Android)
         if: inputs.post-build-steps != ''
-        run: ${{ inputs.post-build-steps }}
+        shell: bash
+        run: | 
+          export GHA_OS=ubuntu-latest
+          export GHA_OS_NAME=android
+          export GHA_ARCH=arm64
+          export GHA_CMAKE_ARCH=arm64-v8a
+          export GHA_CMAKE_RTID=android-arm64
+          export GHA_CMAKE_VCPKG_TRIPLET=arm64-android
+          export GHA_ANDROID_API=${{ inputs.android-api }}
+          export GHA_ANDROID_NDK=${{ inputs.ndk-version }}
+          ${{ inputs.post-build-steps }}
+          export GHA_OS=ubuntu-latest
+          export GHA_OS_NAME=android
+          export GHA_ARCH=x86_64
+          export GHA_CMAKE_ARCH=x86_64
+          export GHA_CMAKE_RTID=android-x64
+          export GHA_CMAKE_VCPKG_TRIPLET=x64-android
+          export GHA_ANDROID_API=${{ inputs.android-api }}
+          export GHA_ANDROID_NDK=${{ inputs.ndk-version }}
+          ${{ inputs.post-build-steps }}
       - name: Normalize binaries for Android
         run: |
           rm -rf ${{ inputs.build-output-dir }}
