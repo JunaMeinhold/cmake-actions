@@ -242,12 +242,12 @@ jobs:
         if: inputs.pre-configure-steps != ''
         shell: bash
         run: |
-          export GHA_OS=${{matrix.os}}
-          export GHA_OS_NAME=${{matrix.os-name}}
-          export GHA_ARCH=${{matrix.arch}}
-          export GHA_CMAKE_ARCH=${{matrix.cmake-arch}}
-          export GHA_CMAKE_RTID=${{matrix.rtid}}
-          export GHA_CMAKE_VCPKG_TRIPLET=${{matrix.vcpkg-triplet}}
+          export GHA_OS="${{matrix.os}}"
+          export GHA_OS_NAME="${{matrix.os-name}}"
+          export GHA_ARCH="${{matrix.arch}}"
+          export GHA_CMAKE_ARCH="${{matrix.cmake-arch}}"
+          export GHA_CMAKE_RTID="${{matrix.rtid}}"
+          export GHA_CMAKE_VCPKG_TRIPLET="${{matrix.vcpkg-triplet}}"
           ${{ inputs.pre-configure-steps }}
       - name: Configure with CMake for Linux
         if: matrix.os-name == 'linux'
@@ -280,13 +280,13 @@ jobs:
       - name: Pre-Build Setup
         if: inputs.pre-build-steps != ''
         shell: bash
-        run: | 
-          export GHA_OS=${{matrix.os}}
-          export GHA_OS_NAME=${{matrix.os-name}}
-          export GHA_ARCH=${{matrix.arch}}
-          export GHA_CMAKE_ARCH=${{matrix.cmake-arch}}
-          export GHA_CMAKE_RTID=${{matrix.rtid}}
-          export GHA_CMAKE_VCPKG_TRIPLET=${{matrix.vcpkg-triplet}}
+        run: |
+          export GHA_OS="${{matrix.os}}"
+          export GHA_OS_NAME="${{matrix.os-name}}"
+          export GHA_ARCH="${{matrix.arch}}"
+          export GHA_CMAKE_ARCH="${{matrix.cmake-arch}}"
+          export GHA_CMAKE_RTID="${{matrix.rtid}}"
+          export GHA_CMAKE_VCPKG_TRIPLET="${{matrix.vcpkg-triplet}}"
           ${{ inputs.pre-build-steps }}
       - name: Build
         run: |
@@ -295,13 +295,13 @@ jobs:
       - name: Post-Build Steps
         if: inputs.post-build-steps != ''
         shell: bash
-        run: | 
-          export GHA_OS=${{matrix.os}}
-          export GHA_OS_NAME=${{matrix.os-name}}
-          export GHA_ARCH=${{matrix.arch}}
-          export GHA_CMAKE_ARCH=${{matrix.cmake-arch}}
-          export GHA_CMAKE_RTID=${{matrix.rtid}}
-          export GHA_CMAKE_VCPKG_TRIPLET=${{matrix.vcpkg-triplet}}
+        run: |
+          export GHA_OS="${{matrix.os}}"
+          export GHA_OS_NAME="${{matrix.os-name}}"
+          export GHA_ARCH="${{matrix.arch}}"
+          export GHA_CMAKE_ARCH="${{matrix.cmake-arch}}"
+          export GHA_CMAKE_RTID="${{matrix.rtid}}"
+          export GHA_CMAKE_VCPKG_TRIPLET="${{matrix.vcpkg-triplet}}"
           ${{ inputs.post-build-steps }}
       - name: Normalize binaries for macOS
         if: matrix.os-name == 'macos'
@@ -376,23 +376,25 @@ jobs:
         if: inputs.pre-configure-steps != ''
         shell: bash
         run: | 
-          export GHA_OS=ubuntu-latest
-          export GHA_OS_NAME=android
-          export GHA_ARCH=arm64
-          export GHA_CMAKE_ARCH=arm64-v8a
-          export GHA_CMAKE_RTID=android-arm64
-          export GHA_CMAKE_VCPKG_TRIPLET=arm64-android
-          export GHA_ANDROID_API=${{ inputs.android-api }}
-          export GHA_ANDROID_NDK=${{ inputs.ndk-version }}
+          export GHA_OS="ubuntu-latest"
+          export GHA_OS_NAME="android"
+          export GHA_ARCH="arm64"
+          export GHA_CMAKE_ARCH="arm64-v8a"
+          export GHA_CMAKE_RTID="android-arm64"
+          export GHA_CMAKE_VCPKG_TRIPLET="arm64-android"
+          export GHA_ANDROID_API="${{ inputs.android-api }}"
+          export GHA_ANDROID_NDK="${{ inputs.ndk-version }}"
+          export GHA_ANDROID_CMAKE_FLAGS="${{ env.android-cmake-flags }}"
           ${{ inputs.pre-configure-steps }}
-          export GHA_OS=ubuntu-latest
-          export GHA_OS_NAME=android
-          export GHA_ARCH=x86_64
-          export GHA_CMAKE_ARCH=x86_64
-          export GHA_CMAKE_RTID=android-x64
-          export GHA_CMAKE_VCPKG_TRIPLET=x64-android
-          export GHA_ANDROID_API=${{ inputs.android-api }}
-          export GHA_ANDROID_NDK=${{ inputs.ndk-version }}
+          export GHA_OS="ubuntu-latest"
+          export GHA_OS_NAME="android"
+          export GHA_ARCH="x86_64"
+          export GHA_CMAKE_ARCH="x86_64"
+          export GHA_CMAKE_RTID="android-x64"
+          export GHA_CMAKE_VCPKG_TRIPLET="x64-android"
+          export GHA_ANDROID_API="${{ inputs.android-api }}"
+          export GHA_ANDROID_NDK="${{ inputs.ndk-version }}"
+          export GHA_ANDROID_CMAKE_FLAGS="${{ env.android-cmake-flags }}"
           ${{ inputs.pre-configure-steps }}
       - name: Configure for arm64-v8a
         run: |
@@ -414,23 +416,25 @@ jobs:
         if: inputs.pre-build-steps != ''
         shell: bash
         run: | 
-          export GHA_OS=ubuntu-latest
-          export GHA_OS_NAME=android
-          export GHA_ARCH=arm64
-          export GHA_CMAKE_ARCH=arm64-v8a
-          export GHA_CMAKE_RTID=android-arm64
-          export GHA_CMAKE_VCPKG_TRIPLET=arm64-android
-          export GHA_ANDROID_API=${{ inputs.android-api }}
-          export GHA_ANDROID_NDK=${{ inputs.ndk-version }}
+          export GHA_OS="ubuntu-latest"
+          export GHA_OS_NAME="android"
+          export GHA_ARCH="arm64"
+          export GHA_CMAKE_ARCH="arm64-v8a"
+          export GHA_CMAKE_RTID="android-arm64"
+          export GHA_CMAKE_VCPKG_TRIPLET="arm64-android"
+          export GHA_ANDROID_API="${{ inputs.android-api }}"
+          export GHA_ANDROID_NDK="${{ inputs.ndk-version }}"
+          export GHA_ANDROID_CMAKE_FLAGS="${{ env.android-cmake-flags }}"
           ${{ inputs.pre-build-steps }}
-          export GHA_OS=ubuntu-latest
-          export GHA_OS_NAME=android
-          export GHA_ARCH=x86_64
-          export GHA_CMAKE_ARCH=x86_64
-          export GHA_CMAKE_RTID=android-x64
-          export GHA_CMAKE_VCPKG_TRIPLET=x64-android
-          export GHA_ANDROID_API=${{ inputs.android-api }}
-          export GHA_ANDROID_NDK=${{ inputs.ndk-version }}
+          export GHA_OS="ubuntu-latest"
+          export GHA_OS_NAME="android"
+          export GHA_ARCH="x86_64"
+          export GHA_CMAKE_ARCH="x86_64"
+          export GHA_CMAKE_RTID="android-x64"
+          export GHA_CMAKE_VCPKG_TRIPLET="x64-android"
+          export GHA_ANDROID_API="${{ inputs.android-api }}"
+          export GHA_ANDROID_NDK="${{ inputs.ndk-version }}"
+          export GHA_ANDROID_CMAKE_FLAGS="${{ env.android-cmake-flags }}"
           ${{ inputs.pre-build-steps }}
       - name: Build
         run: |
@@ -441,23 +445,25 @@ jobs:
         if: inputs.post-build-steps != ''
         shell: bash
         run: | 
-          export GHA_OS=ubuntu-latest
-          export GHA_OS_NAME=android
-          export GHA_ARCH=arm64
-          export GHA_CMAKE_ARCH=arm64-v8a
-          export GHA_CMAKE_RTID=android-arm64
-          export GHA_CMAKE_VCPKG_TRIPLET=arm64-android
-          export GHA_ANDROID_API=${{ inputs.android-api }}
-          export GHA_ANDROID_NDK=${{ inputs.ndk-version }}
+          export GHA_OS="ubuntu-latest"
+          export GHA_OS_NAME="android"
+          export GHA_ARCH="arm64"
+          export GHA_CMAKE_ARCH="arm64-v8a"
+          export GHA_CMAKE_RTID="android-arm64"
+          export GHA_CMAKE_VCPKG_TRIPLET="arm64-android"
+          export GHA_ANDROID_API="${{ inputs.android-api }}"
+          export GHA_ANDROID_NDK="${{ inputs.ndk-version }}"
+          export GHA_ANDROID_CMAKE_FLAGS="${{ env.android-cmake-flags }}"
           ${{ inputs.post-build-steps }}
-          export GHA_OS=ubuntu-latest
-          export GHA_OS_NAME=android
-          export GHA_ARCH=x86_64
-          export GHA_CMAKE_ARCH=x86_64
-          export GHA_CMAKE_RTID=android-x64
-          export GHA_CMAKE_VCPKG_TRIPLET=x64-android
-          export GHA_ANDROID_API=${{ inputs.android-api }}
-          export GHA_ANDROID_NDK=${{ inputs.ndk-version }}
+          export GHA_OS="ubuntu-latest"
+          export GHA_OS_NAME="android"
+          export GHA_ARCH="x86_64"
+          export GHA_CMAKE_ARCH="x86_64"
+          export GHA_CMAKE_RTID="android-x64"
+          export GHA_CMAKE_VCPKG_TRIPLET="x64-android"
+          export GHA_ANDROID_API="${{ inputs.android-api }}"
+          export GHA_ANDROID_NDK="${{ inputs.ndk-version }}"
+          export GHA_ANDROID_CMAKE_FLAGS="${{ env.android-cmake-flags }}"
           ${{ inputs.post-build-steps }}
       - name: Normalize binaries for Android
         run: |
