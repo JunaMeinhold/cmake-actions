@@ -242,7 +242,7 @@ jobs:
           brew update
           brew install ${{ inputs.macos-deps }}
       - name: Prepare Vulkan SDK
-        if: inputs.setup-vulkan == true && (matrix.os == 'macos-latest' || matrix.os == 'macos-13')
+        if: inputs.setup-vulkan == true
         uses: humbletim/setup-vulkan-sdk@v1.2.1
         with:
           vulkan-query-version: ${{ inputs.vulkan-version }}
