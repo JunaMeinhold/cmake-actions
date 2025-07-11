@@ -164,7 +164,7 @@ on:
       vulkan-version:
         description: "Vulkan SDK version (optional)"
         required: false
-        default: "1.3.204.0"
+        default: "1.4.304.1"
         type: string
       vulkan-components:
         description: "Comma-separated list of Vulkan SDK components (optional)"
