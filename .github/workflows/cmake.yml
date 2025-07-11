@@ -241,6 +241,10 @@ jobs:
         run: |
           brew update
           brew install ${{ inputs.macos-deps }}
+      - name: Install dependencies on Windows
+        if: matrix.os-name == 'windows' && inputs.windows-deps != ''
+        run: |
+          choco install -y ${{ inputs.windows-deps }}
       - name: Prepare Vulkan SDK
         if: inputs.setup-vulkan == true
         uses: humbletim/setup-vulkan-sdk@v1.2.1
@@ -248,10 +252,6 @@ jobs:
           vulkan-query-version: ${{ inputs.vulkan-version }}
           vulkan-components: ${{ inputs.vulkan-components }}
           vulkan-use-cache: ${{ inputs.vulkan-use-cache }}
-      - name: Install dependencies on Windows
-        if: matrix.os-name == 'windows' && inputs.windows-deps != ''
-        run: |
-          choco install -y ${{ inputs.windows-deps }}
       - name: Setup vcpkg
         if: inputs.use-vcpkg == true
         shell: bash
