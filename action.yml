@@ -1,0 +1,17 @@
+name: 'CMake Actions Workflows'
+description: 'A collection of reusable GitHub Actions workflows for building native artifacts with CMake and creating pull requests with trimmed artifacts.'
+author: 'JunaMeinhold'
+branding:
+  icon: 'package'
+  color: 'blue'
+runs:
+  using: 'composite'
+  steps: []
+inputs: {}
+outputs: {}
+
+# This repository provides the following reusable workflows:
+# - ./.github/workflows/cmake.yml: Build and upload native artifacts using CMake
+# - ./.github/workflows/create-pr.yml: Download, trim, and create PRs with artifacts
+#
+# See the README.md for usage instructions.

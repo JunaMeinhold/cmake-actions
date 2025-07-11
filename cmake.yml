@@ -1,0 +1,412 @@
+name: Build and Upload Native Artifacts
+
+on:
+  workflow_call:
+    inputs:
+      lib-name:
+        description: "Library name (e.g., Project)"
+        required: true
+        type: string
+      repo:
+        description: "Repository to checkout (e.g., org/project)"
+        required: true
+        type: string
+      repo-tag:
+        description: "Repository tag or ref (e.g., v1.0.0)"
+        required: true
+        type: string
+      repo-path:
+        description: "Path to checkout repo into"
+        required: false
+        default: src
+        type: string
+      cmake-flags:
+        description: "CMake flags"
+        required: false
+        default: "-DCMAKE_BUILD_TYPE=Release"
+        type: string
+      ndk-version:
+        description: "Android NDK version"
+        required: false
+        default: "26.3.11579264"
+        type: string
+      android-api:
+        description: "Android API version"
+        required: false
+        default: "21"
+        type: string
+      build-output-dir:
+        description: "Build output directory"
+        required: false
+        default: artifacts
+        type: string
+      bin-name-osx:
+        description: "macOS binary name"
+        required: true
+        type: string
+      bin-name-linux:
+        description: "Linux binary name"
+        required: true
+        type: string
+      bin-name-android:
+        description: "Android binary name"
+        required: true
+        type: string
+      bin-name-windows:
+        description: "Windows binary name"
+        required: true
+        type: string
+      bin-name-osx-normalized:
+        description: "Normalized macOS binary name"
+        required: true
+        type: string
+      bin-name-linux-normalized:
+        description: "Normalized Linux binary name"
+        required: true
+        type: string
+      bin-name-android-normalized:
+        description: "Normalized Android binary name"
+        required: true
+        type: string
+      bin-name-windows-normalized:
+        description: "Normalized Windows binary name"
+        required: true
+        type: string
+      base:
+        description: "Base branch for PR"
+        required: false
+        default: master
+        type: string
+      branch:
+        description: "Branch for PR"
+        required: false
+        default: native-artifacts-branch
+        type: string
+      output-dir:
+        description: "Output directory for PR"
+        required: true
+        type: string
+      reviewers:
+        description: "Reviewers for PR"
+        required: false
+        default: "JunaMeinhold"
+        type: string
+      linux-deps:
+        description: "Space-separated list of Ubuntu packages to install before build."
+        required: false
+        default: "build-essential cmake"
+        type: string
+      windows-deps:
+        description: "Space-separated list of Chocolatey packages to install before build."
+        required: false
+        default: ""
+        type: string
+      macos-deps:
+        description: "Space-separated list of Homebrew packages to install before build."
+        required: false
+        default: ""
+        type: string
+      use-vcpkg:
+        description: "Set to true to enable vcpkg integration."
+        required: false
+        default: false
+        type: boolean
+      vcpkg-packages:
+        description: "Space-separated list of vcpkg packages to install."
+        required: false
+        default: ""
+        type: string
+      cmake-flags-linux:
+        description: "Additional CMake flags for Linux."
+        required: false
+        default: ""
+        type: string
+      cmake-flags-macos:
+        description: "Additional CMake flags for macOS."
+        required: false
+        default: ""
+        type: string
+      cmake-flags-windows:
+        description: "Additional CMake flags for Windows."
+        required: false
+        default: ""
+        type: string
+      cmake-flags-android:
+        description: "Additional CMake flags for Android."
+        required: false
+        default: ""
+        type: string
+      pre-build-steps:
+        description: "Commands to run before building (optional)"
+        required: false
+        default: ""
+        type: string
+      pre-configure-steps:
+        description: "Commands to run before CMake configure (optional)"
+        required: false
+        default: ""
+        type: string
+      post-build-steps:
+        description: "Commands to run after build (optional)"
+        required: false
+        default: ""
+        type: string
+      create-pr:
+        description: "Whether to create a pull request"
+        required: false
+        default: true
+        type: boolean
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            os-name: linux
+            arch: x86_64
+            cmake-arch: x64
+            rtid: linux-x64
+            vcpkg-triplet: x64-linux
+          - os: ubuntu-24.04-arm
+            os-name: linux
+            arch: arm64
+            cmake-arch: aarch64
+            rtid: linux-arm64
+            vcpkg-triplet: arm64-linux
+          - os: windows-latest
+            os-name: windows
+            arch: x86_64
+            cmake-arch: x64
+            rtid: win-x64
+            vcpkg-triplet: x64-windows-static
+          - os: windows-latest
+            os-name: windows
+            arch: x86
+            cmake-arch: win32
+            rtid: win-x86
+            vcpkg-triplet: x86-windows-static
+          - os: windows-latest
+            os-name: windows
+            arch: arm64
+            cmake-arch: arm64
+            rtid: win-arm64
+            vcpkg-triplet: arm64-windows-static
+          - os: macos-latest
+            os-name: macos
+            arch: x86_64
+            cmake-arch: x86_64
+            rtid: osx-x64
+            vcpkg-triplet: x64-osx
+          - os: macos-latest
+            os-name: macos
+            arch: arm64
+            cmake-arch: arm64
+            rtid: osx-arm64
+            vcpkg-triplet: arm64-osx
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: "${{ inputs.repo }}"
+          ref: "${{ inputs.repo-tag }}"
+          path: "${{ inputs.repo-path }}"
+          submodules: true
+      - name: Install dependencies on Ubuntu
+        if: matrix.os-name == 'linux'
+        run: |
+          sudo apt-get update && sudo apt-get install -y ${{ inputs.linux-deps }}
+      - name: Install dependencies on macOS
+        if: matrix.os-name == 'macos' && inputs.macos-deps != ''
+        run: |
+          brew update
+          brew install ${{ inputs.macos-deps }}
+      - name: Install dependencies on Windows
+        if: matrix.os-name == 'windows' && inputs.windows-deps != ''
+        run: |
+          choco install -y ${{ inputs.windows-deps }}
+      - name: Setup vcpkg
+        if: inputs.use-vcpkg == true
+        shell: bash
+        run: |
+          cd ${{ inputs.repo-path }}
+          git clone https://github.com/microsoft/vcpkg.git
+          cd vcpkg
+          ./bootstrap-vcpkg.sh || ./bootstrap-vcpkg.bat
+          if [ -n "${{ matrix.vcpkg-triplet }}" ]; then
+            ./vcpkg install ${{ inputs.vcpkg-packages }} --triplet "${{ matrix.vcpkg-triplet }}"
+          else
+            ./vcpkg install ${{ inputs.vcpkg-packages }}
+          fi
+      - name: Pre-Configure Setup
+        if: inputs.pre-configure-steps != ''
+        run: ${{ inputs.pre-configure-steps }}
+      - name: Configure with CMake for Linux
+        if: matrix.os-name == 'linux'
+        run: |
+          cd ${{ inputs.repo-path }}
+          if [ "${{ inputs.use-vcpkg }}" = "true" ]; then \
+            cmake -S . -B ./build ${{ inputs.cmake-flags }} ${{ inputs.cmake-flags-linux }} -DCMAKE_TOOLCHAIN_FILE="./vcpkg/scripts/buildsystems/vcpkg.cmake" -DVCPKG_TARGET_TRIPLET=${{ matrix.vcpkg-triplet }}; \
+          else \
+            cmake -S . -B ./build ${{ inputs.cmake-flags }} ${{ inputs.cmake-flags-linux }}; \
+          fi
+      - name: Configure with CMake for macOS
+        if: matrix.os-name == 'macos'
+        run: |
+          cd ${{ inputs.repo-path }}
+          if [ "${{ inputs.use-vcpkg }}" = "true" ]; then \
+            cmake -S . -B ./build -DCMAKE_OSX_ARCHITECTURES=${{ matrix.cmake-arch }} ${{ inputs.cmake-flags }} ${{ inputs.cmake-flags-macos }} -DCMAKE_TOOLCHAIN_FILE="./vcpkg/scripts/buildsystems/vcpkg.cmake" -DVCPKG_TARGET_TRIPLET=${{ matrix.vcpkg-triplet }}; \
+          else \
+            cmake -S . -B ./build -DCMAKE_OSX_ARCHITECTURES=${{ matrix.cmake-arch }} ${{ inputs.cmake-flags }} ${{ inputs.cmake-flags-macos }}; \
+          fi
+      - name: Configure with CMake for Windows
+        if: matrix.os-name == 'windows'
+        shell: bash
+        run: |
+          cd ${{ inputs.repo-path }}
+          if [ "${{ inputs.use-vcpkg }}" = "true" ]; then \
+            cmake -S . -B ./build -A ${{ matrix.cmake-arch }} ${{ inputs.cmake-flags }} ${{ inputs.cmake-flags-windows }} -DCMAKE_TOOLCHAIN_FILE="./vcpkg/scripts/buildsystems/vcpkg.cmake" -DVCPKG_TARGET_TRIPLET=${{ matrix.vcpkg-triplet }}; \
+          else \
+            cmake -S . -B ./build -A ${{ matrix.cmake-arch }} ${{ inputs.cmake-flags }} ${{ inputs.cmake-flags-windows }}; \
+          fi
+      - name: Pre-Build Setup
+        if: inputs.pre-build-steps != ''
+        run: ${{ inputs.pre-build-steps }}
+      - name: Build
+        run: |
+          cd ${{ inputs.repo-path }}
+          cmake --build ./build --config Release
+      - name: Post-Build Steps
+        if: inputs.post-build-steps != ''
+        run: ${{ inputs.post-build-steps }}
+      - name: Normalize binaries for macOS
+        if: matrix.os-name == 'macos'
+        run: |
+          rm -rf ${{ inputs.build-output-dir }}
+          mkdir ${{ inputs.build-output-dir }}
+          cp -L ${{ inputs.repo-path }}/build/${{ inputs.bin-name-osx }} ${{ inputs.build-output-dir }}/${{ inputs.bin-name-osx-normalized }}
+          ls -lha ${{ inputs.build-output-dir }}
+      - name: Normalize binaries for Linux
+        if: matrix.os-name == 'linux'
+        run: |
+          rm -rf ${{ inputs.build-output-dir }}
+          mkdir ${{ inputs.build-output-dir }}
+          cp -L ${{ inputs.repo-path }}/build/${{ inputs.bin-name-linux }} ${{ inputs.build-output-dir }}/${{ inputs.bin-name-linux-normalized }}
+          ls -lha ${{ inputs.build-output-dir }}
+      - name: Normalize binaries for Windows
+        if: matrix.os-name == 'windows'
+        run: |
+          rm -r ${{ inputs.build-output-dir }} -ErrorAction SilentlyContinue
+          mkdir ${{ inputs.build-output-dir }}
+          cp ${{ inputs.repo-path }}/build/${{ inputs.bin-name-windows }} ${{ inputs.build-output-dir }}/${{ inputs.bin-name-windows-normalized }}
+          ls ${{ inputs.build-output-dir }}
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ inputs.lib-name }}-${{ matrix.rtid }}
+          path: |
+            ${{ inputs.build-output-dir }}/*.dll
+            ${{ inputs.build-output-dir }}/*.so
+            ${{ inputs.build-output-dir }}/*.dylib
+          if-no-files-found: error
+  build-android:
+    runs-on: ubuntu-latest
+    env:
+      android-cmake-flags: -G "Ninja" -DCMAKE_SYSTEM_NAME=Android -DCMAKE_ANDROID_NDK=$ANDROID_NDK_HOME -DCMAKE_ANDROID_NDK_TOOLCHAIN_VERSION=clang -DCMAKE_ANDROID_STL_TYPE=c++_shared -DANDROID_NDK=$ANDROID_NDK_HOME
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: "${{ inputs.repo }}"
+          ref: "${{ inputs.repo-tag }}"
+          path: "${{ inputs.repo-path }}"
+          submodules: true
+      - name: Install dependencies on Ubuntu
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential cmake ninja-build
+      - name: Setup Java
+        uses: actions/setup-java@v3
+        with:
+          distribution: "temurin"
+          java-version: 17
+      - name: Install Android SDK Manager
+        uses: android-actions/setup-android@v3
+        with:
+          packages: ""
+      - name: Install Android NDK
+        run: |
+          sdkmanager --install "ndk;${{ inputs.ndk-version}}"
+          echo "ANDROID_NDK_HOME=$ANDROID_SDK_ROOT/ndk/${{ inputs.ndk-version}}" >> $GITHUB_ENV
+          echo "PATH=$PATH:$ANDROID_SDK_ROOT/ndk/${{ inputs.ndk-version}}" >> $GITHUB_ENV
+      - name: Setup vcpkg for Android
+        if: inputs.use-vcpkg == true
+        run: |
+          cd ${{ inputs.repo-path }}
+          git clone https://github.com/microsoft/vcpkg.git
+          cd vcpkg
+          ./bootstrap-vcpkg.sh
+          ./vcpkg install ${{ inputs.vcpkg-packages }} --triplet arm64-android
+          ./vcpkg install ${{ inputs.vcpkg-packages }} --triplet x64-android
+          echo "VCPKG_TOOLCHAIN_FILE=./vcpkg/scripts/buildsystems/vcpkg.cmake" >> $GITHUB_ENV
+      - name: Pre-Configure Setup (Android)
+        if: inputs.pre-configure-steps != ''
+        run: ${{ inputs.pre-configure-steps }}
+      - name: Configure for arm64-v8a
+        run: |
+          cd ${{ inputs.repo-path }}
+          if [ "${{ inputs.use-vcpkg }}" = "true" ]; then \
+            cmake -S . -B ./build/arm64-v8a ${{ env.android-cmake-flags }} -DCMAKE_ANDROID_ARCH_ABI=arm64-v8a -DCMAKE_ANDROID_API=${{ inputs.android-api }} ${{ inputs.cmake-flags }} ${{ inputs.cmake-flags-android }} -DCMAKE_TOOLCHAIN_FILE="./vcpkg/scripts/buildsystems/vcpkg.cmake" -DVCPKG_TARGET_TRIPLET=arm64-android; \
+          else \
+            cmake -S . -B ./build/arm64-v8a ${{ env.android-cmake-flags }} -DCMAKE_ANDROID_ARCH_ABI=arm64-v8a -DCMAKE_ANDROID_API=${{ inputs.android-api }} ${{ inputs.cmake-flags }} ${{ inputs.cmake-flags-android }}; \
+          fi
+      - name: Configure for x86_64
+        run: |
+          cd ${{ inputs.repo-path }}
+          if [ "${{ inputs.use-vcpkg }}" = "true" ]; then \
+            cmake -S . -B ./build/x86_64 ${{ env.android-cmake-flags }} -DCMAKE_ANDROID_ARCH_ABI=x86_64 -DCMAKE_ANDROID_API=${{ inputs.android-api }} ${{ inputs.cmake-flags }} ${{ inputs.cmake-flags-android }} -DCMAKE_TOOLCHAIN_FILE="./vcpkg/scripts/buildsystems/vcpkg.cmake" -DVCPKG_TARGET_TRIPLET=x64-android; \
+          else \
+            cmake -S . -B ./build/x86_64 ${{ env.android-cmake-flags }} -DCMAKE_ANDROID_ARCH_ABI=x86_64 -DCMAKE_ANDROID_API=${{ inputs.android-api }} ${{ inputs.cmake-flags }} ${{ inputs.cmake-flags-android }}; \
+          fi
+      - name: Pre-Build Setup (Android)
+        if: inputs.pre-build-steps != ''
+        run: ${{ inputs.pre-build-steps }}
+      - name: Build
+        run: |
+          cd ${{ inputs.repo-path }}
+          cmake --build ./build/arm64-v8a --config Release
+          cmake --build ./build/x86_64 --config Release
+      - name: Post-Build Steps (Android)
+        if: inputs.post-build-steps != ''
+        run: ${{ inputs.post-build-steps }}
+      - name: Normalize binaries for Android
+        run: |
+          rm -rf ${{ inputs.build-output-dir }}
+          mkdir -p ${{ inputs.build-output-dir }}/arm64-v8a
+          mkdir -p ${{ inputs.build-output-dir }}/x86_64
+          cp -L ${{ inputs.repo-path }}/build/arm64-v8a/${{ inputs.bin-name-android }} ${{ inputs.build-output-dir }}/arm64-v8a/${{ inputs.bin-name-android-normalized }}
+          cp -L ${{ inputs.repo-path }}/build/x86_64/${{ inputs.bin-name-android }} ${{ inputs.build-output-dir }}/x86_64/${{ inputs.bin-name-android-normalized }}
+          ls ${{ inputs.build-output-dir }}/arm64-v8a
+          ls ${{ inputs.build-output-dir }}/x86_64
+      - name: Upload Artifacts (android-arm64)
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ inputs.lib-name }}-android-arm64
+          path: ${{ inputs.build-output-dir }}/arm64-v8a/*.so
+          if-no-files-found: error
+      - name: Upload Artifacts (android-x64)
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ inputs.lib-name }}-android-x64
+          path: ${{ inputs.build-output-dir }}/x86_64/*.so
+          if-no-files-found: error
+  create-pr:
+    uses: ./.github/workflows/create-pr.yml
+    needs: [build, build-android]
+    if: inputs.create-pr == true
+    with:
+      lib-name: ${{ inputs.lib-name }}
+      repo-tag: ${{ inputs.repo-tag }}
+      output-dir: ${{ inputs.output-dir }}
+      branch: ${{ inputs.branch }}
+      base: ${{ inputs.base }}
+      reviewers: ${{ inputs.reviewers }}

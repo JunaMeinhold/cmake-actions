@@ -1,0 +1,75 @@
+name: Create PR with Trimmed Artifacts
+
+description: |
+  Downloads all artifacts, trims library names to RTID directories, and creates a pull request with the result.
+
+on:
+  workflow_call:
+    inputs:
+      lib-name:
+        description: "Library name (e.g., Project)"
+        required: true
+        type: string
+      repo-tag:
+        description: "Repository tag or ref (e.g., v1.0.0)"
+        required: true
+        type: string
+      output-dir:
+        description: "Output directory for PR"
+        required: true
+        type: string
+      branch:
+        description: "Branch for PR"
+        required: false
+        default: native-artifacts-branch
+        type: string
+      base:
+        description: "Base branch for PR"
+        required: false
+        default: master
+        type: string
+      reviewers:
+        description: "Reviewers for PR"
+        required: false
+        default: ""
+        type: string
+
+jobs:
+  create-pr:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: ${{ inputs.output-dir }}
+      - name: Trim Library Name
+        run: |
+          cd ${{ inputs.output-dir }}
+          shopt -s nullglob dotglob
+          for artifact_dir in */; do
+            if [ -d "$artifact_dir" ]; then
+              artifact_name="${artifact_dir%/}"
+              rtid=$(echo "$artifact_name" | awk -F'-' '{print $(NF-1)"-"$NF}')
+              if [ "$artifact_name" != "$rtid" ]; then
+                mkdir -p "$rtid"
+                find "$artifact_dir" -mindepth 1 -maxdepth 1 -type f -exec mv -t "$rtid" {} +
+                if [ -z "$(ls -A "$artifact_dir")" ]; then
+                  rmdir "$artifact_dir"
+                fi
+              fi
+            fi
+          done
+      - name: Create a Pull Request
+        uses: peter-evans/create-pull-request@v7
+        with:
+          title: "Update native libraries for ${{ inputs.lib-name }} to version ${{ inputs.repo-tag }}"
+          body: "This pull request updates the native libraries in the ${{ inputs.output-dir }} folder to version ${{ inputs.repo-tag }}."
+          commit-message: "chore: update native libraries to version ${{ inputs.repo-tag }}"
+          add-paths: "${{ inputs.output-dir }}/*"
+          branch: ${{ inputs.branch }}
+          base: ${{ inputs.base }}
+          reviewers: ${{ inputs.reviewers }}
+          sign-commits: true
+          delete-branch: true
