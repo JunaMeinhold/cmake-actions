@@ -156,6 +156,26 @@ on:
         required: false
         default: true
         type: boolean
+      setup-vulkan:
+        description: "Whether to setup Vulkan SDK (optional)"
+        required: false
+        default: false
+        type: boolean
+      vulkan-version:
+        description: "Vulkan SDK version (optional)"
+        required: false
+        default: "1.3.204.0"
+        type: string
+      vulkan-components:
+        description: "Comma-separated list of Vulkan SDK components (optional)"
+        required: false
+        default: "Vulkan-Headers, Vulkan-Loader, Glslang"
+        type: string
+      vulkan-use-cache:
+        description: "Whether to use Vulkan SDK cache (optional)"
+        required: false
+        default: false
+        type: boolean
 
 jobs:
   build:
@@ -221,6 +241,13 @@ jobs:
         run: |
           brew update
           brew install ${{ inputs.macos-deps }}
+      - name: Prepare Vulkan SDK
+        if: inputs.setup-vulkan == true && (matrix.os == 'macos-latest' || matrix.os == 'macos-13')
+        uses: humbletim/setup-vulkan-sdk@v1.2.1
+        with:
+          vulkan-query-version: ${{ inputs.vulkan-version }}
+          vulkan-components: ${{ inputs.vulkan-components }}
+          vulkan-use-cache: ${{ inputs.vulkan-use-cache }}
       - name: Install dependencies on Windows
         if: matrix.os-name == 'windows' && inputs.windows-deps != ''
         run: |
