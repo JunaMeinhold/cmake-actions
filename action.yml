@@ -1,5 +1,5 @@
-name: 'CMake Actions Workflows'
-description: 'A collection of reusable GitHub Actions workflows for building native artifacts with CMake and creating pull requests with trimmed artifacts.'
+name: 'CMake Actions Workflows for HexaGen'
+description: 'Reusable workflows for CMake builds and PR creation for HexaGen projects.'
 author: 'JunaMeinhold'
 branding:
   icon: 'package'
@@ -11,7 +11,7 @@ inputs: {}
 outputs: {}
 
 # This repository provides the following reusable workflows:
-# - ./.github/workflows/cmake.yml: Build and upload native artifacts using CMake
-# - ./.github/workflows/create-pr.yml: Download, trim, and create PRs with artifacts
+# - ./cmake.yml: Build and upload native artifacts using CMake
+# - ./create-pr.yml: Download, trim, and create PRs with artifacts
 #
 # See the README.md for usage instructions.
