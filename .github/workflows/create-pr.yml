@@ -32,7 +32,7 @@ on:
       pr-manifest-path:
         description: "Path to the manifest file in the checked-out repo"
         required: false
-        default: hexa-workflows/hexa-workflows.json
+        default: hexa-workflows.json
         type: string
 
 jobs:
