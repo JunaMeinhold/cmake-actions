@@ -369,6 +369,21 @@ jobs:
           if-no-files-found: error
   build-android:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            os-name: android
+            arch: arm64
+            cmake-arch: arm64-v8a
+            rtid: android-arm64
+            vcpkg-triplet: arm64-android
+          - os: ubuntu-latest
+            os-name: android
+            arch: x86_64
+            cmake-arch: x86_64
+            rtid: android-x64
+            vcpkg-triplet: x64-android
     env:
       android-cmake-flags: -G "Ninja" -DCMAKE_SYSTEM_NAME=Android -DCMAKE_ANDROID_NDK=$ANDROID_NDK_HOME -DCMAKE_ANDROID_NDK_TOOLCHAIN_VERSION=clang -DCMAKE_ANDROID_STL_TYPE=c++_shared -DANDROID_NDK=$ANDROID_NDK_HOME
     steps:
@@ -405,69 +420,40 @@ jobs:
           git clone https://github.com/microsoft/vcpkg.git
           cd vcpkg
           ./bootstrap-vcpkg.sh
-          ./vcpkg install ${{ inputs.vcpkg-packages }} --triplet arm64-android
-          ./vcpkg install ${{ inputs.vcpkg-packages }} --triplet x64-android
+          ./vcpkg install ${{ inputs.vcpkg-packages }} --triplet ${{ matrix.arch.vcpkg-triplet }}
           echo "VCPKG_TOOLCHAIN_FILE=./vcpkg/scripts/buildsystems/vcpkg.cmake" >> $GITHUB_ENV
       - name: Pre-Configure Setup (Android)
         if: inputs.pre-configure-steps != ''
         shell: bash
-        run: | 
-          export GHA_OS="ubuntu-latest"
-          export GHA_OS_NAME="android"
-          export GHA_ARCH="arm64"
-          export GHA_CMAKE_ARCH="arm64-v8a"
-          export GHA_CMAKE_RTID="android-arm64"
-          export GHA_CMAKE_VCPKG_TRIPLET="arm64-android"
+        run: |
+          export GHA_RUNNER_OS="${{ matrix.os }}"
+          export GHA_OS_NAME="${{ matrix.os-name }}"
+          export GHA_ARCH="${{ matrix.arch.arch }}"
+          export GHA_CMAKE_ARCH="${{ matrix.arch.cmake-arch }}"
+          export GHA_CMAKE_RTID="${{ matrix.arch.rtid }}"
+          export GHA_CMAKE_VCPKG_TRIPLET="${{ matrix.arch.vcpkg-triplet }}"
           export GHA_ANDROID_API="${{ inputs.android-api }}"
           export GHA_ANDROID_NDK="${{ inputs.ndk-version }}"
           export GHA_ANDROID_CMAKE_FLAGS="${{ env.android-cmake-flags }}"
           ${{ inputs.pre-configure-steps }}
-          export GHA_OS="ubuntu-latest"
-          export GHA_OS_NAME="android"
-          export GHA_ARCH="x86_64"
-          export GHA_CMAKE_ARCH="x86_64"
-          export GHA_CMAKE_RTID="android-x64"
-          export GHA_CMAKE_VCPKG_TRIPLET="x64-android"
-          export GHA_ANDROID_API="${{ inputs.android-api }}"
-          export GHA_ANDROID_NDK="${{ inputs.ndk-version }}"
-          export GHA_ANDROID_CMAKE_FLAGS="${{ env.android-cmake-flags }}"
-          ${{ inputs.pre-configure-steps }}
-      - name: Configure for arm64-v8a
+      - name: Configure
         run: |
           cd ${{ inputs.repo-path }}
           if [ "${{ inputs.use-vcpkg }}" = "true" ]; then \
-            cmake -S . -B ./build/arm64-v8a ${{ env.android-cmake-flags }} -DCMAKE_ANDROID_ARCH_ABI=arm64-v8a -DCMAKE_ANDROID_API=${{ inputs.android-api }} ${{ inputs.cmake-flags }} ${{ inputs.cmake-flags-android }} -DCMAKE_TOOLCHAIN_FILE="./vcpkg/scripts/buildsystems/vcpkg.cmake" -DVCPKG_TARGET_TRIPLET=arm64-android; \
+            cmake -S . -B ./build/${{ matrix.arch.cmake-arch }} ${{ env.android-cmake-flags }} -DCMAKE_ANDROID_ARCH_ABI=${{ matrix.arch.cmake-arch }} -DCMAKE_ANDROID_API=${{ inputs.android-api }} ${{ inputs.cmake-flags }} ${{ inputs.cmake-flags-android }} -DCMAKE_TOOLCHAIN_FILE="./vcpkg/scripts/buildsystems/vcpkg.cmake" -DVCPKG_TARGET_TRIPLET=${{ matrix.arch.vcpkg-triplet }}; \
           else \
-            cmake -S . -B ./build/arm64-v8a ${{ env.android-cmake-flags }} -DCMAKE_ANDROID_ARCH_ABI=arm64-v8a -DCMAKE_ANDROID_API=${{ inputs.android-api }} ${{ inputs.cmake-flags }} ${{ inputs.cmake-flags-android }}; \
-          fi
-      - name: Configure for x86_64
-        run: |
-          cd ${{ inputs.repo-path }}
-          if [ "${{ inputs.use-vcpkg }}" = "true" ]; then \
-            cmake -S . -B ./build/x86_64 ${{ env.android-cmake-flags }} -DCMAKE_ANDROID_ARCH_ABI=x86_64 -DCMAKE_ANDROID_API=${{ inputs.android-api }} ${{ inputs.cmake-flags }} ${{ inputs.cmake-flags-android }} -DCMAKE_TOOLCHAIN_FILE="./vcpkg/scripts/buildsystems/vcpkg.cmake" -DVCPKG_TARGET_TRIPLET=x64-android; \
-          else \
-            cmake -S . -B ./build/x86_64 ${{ env.android-cmake-flags }} -DCMAKE_ANDROID_ARCH_ABI=x86_64 -DCMAKE_ANDROID_API=${{ inputs.android-api }} ${{ inputs.cmake-flags }} ${{ inputs.cmake-flags-android }}; \
+            cmake -S . -B ./build/${{ matrix.arch.cmake-arch }} ${{ env.android-cmake-flags }} -DCMAKE_ANDROID_ARCH_ABI=${{ matrix.arch.cmake-arch }} -DCMAKE_ANDROID_API=${{ inputs.android-api }} ${{ inputs.cmake-flags }} ${{ inputs.cmake-flags-android }}; \
           fi
       - name: Pre-Build Setup (Android)
         if: inputs.pre-build-steps != ''
         shell: bash
-        run: | 
-          export GHA_OS="ubuntu-latest"
-          export GHA_OS_NAME="android"
-          export GHA_ARCH="arm64"
-          export GHA_CMAKE_ARCH="arm64-v8a"
-          export GHA_CMAKE_RTID="android-arm64"
-          export GHA_CMAKE_VCPKG_TRIPLET="arm64-android"
-          export GHA_ANDROID_API="${{ inputs.android-api }}"
-          export GHA_ANDROID_NDK="${{ inputs.ndk-version }}"
-          export GHA_ANDROID_CMAKE_FLAGS="${{ env.android-cmake-flags }}"
-          ${{ inputs.pre-build-steps }}
-          export GHA_OS="ubuntu-latest"
-          export GHA_OS_NAME="android"
-          export GHA_ARCH="x86_64"
-          export GHA_CMAKE_ARCH="x86_64"
-          export GHA_CMAKE_RTID="android-x64"
-          export GHA_CMAKE_VCPKG_TRIPLET="x64-android"
+        run: |
+          export GHA_RUNNER_OS="${{ matrix.os }}"
+          export GHA_OS_NAME="${{ matrix.os-name }}"
+          export GHA_ARCH="${{ matrix.arch.arch }}"
+          export GHA_CMAKE_ARCH="${{ matrix.arch.cmake-arch }}"
+          export GHA_CMAKE_RTID="${{ matrix.arch.rtid }}"
+          export GHA_CMAKE_VCPKG_TRIPLET="${{ matrix.arch.vcpkg-triplet }}"
           export GHA_ANDROID_API="${{ inputs.android-api }}"
           export GHA_ANDROID_NDK="${{ inputs.ndk-version }}"
           export GHA_ANDROID_CMAKE_FLAGS="${{ env.android-cmake-flags }}"
@@ -475,28 +461,17 @@ jobs:
       - name: Build
         run: |
           cd ${{ inputs.repo-path }}
-          cmake --build ./build/arm64-v8a --config Release
-          cmake --build ./build/x86_64 --config Release
+          cmake --build ./build/${{ matrix.arch.cmake-arch }} --config Release
       - name: Post-Build Steps (Android)
         if: inputs.post-build-steps != ''
         shell: bash
-        run: | 
-          export GHA_OS="ubuntu-latest"
-          export GHA_OS_NAME="android"
-          export GHA_ARCH="arm64"
-          export GHA_CMAKE_ARCH="arm64-v8a"
-          export GHA_CMAKE_RTID="android-arm64"
-          export GHA_CMAKE_VCPKG_TRIPLET="arm64-android"
-          export GHA_ANDROID_API="${{ inputs.android-api }}"
-          export GHA_ANDROID_NDK="${{ inputs.ndk-version }}"
-          export GHA_ANDROID_CMAKE_FLAGS="${{ env.android-cmake-flags }}"
-          ${{ inputs.post-build-steps }}
-          export GHA_OS="ubuntu-latest"
-          export GHA_OS_NAME="android"
-          export GHA_ARCH="x86_64"
-          export GHA_CMAKE_ARCH="x86_64"
-          export GHA_CMAKE_RTID="android-x64"
-          export GHA_CMAKE_VCPKG_TRIPLET="x64-android"
+        run: |
+          export GHA_RUNNER_OS="${{ matrix.os }}"
+          export GHA_OS_NAME="${{ matrix.os-name }}"
+          export GHA_ARCH="${{ matrix.arch.arch }}"
+          export GHA_CMAKE_ARCH="${{ matrix.arch.cmake-arch }}"
+          export GHA_CMAKE_RTID="${{ matrix.arch.rtid }}"
+          export GHA_CMAKE_VCPKG_TRIPLET="${{ matrix.arch.vcpkg-triplet }}"
           export GHA_ANDROID_API="${{ inputs.android-api }}"
           export GHA_ANDROID_NDK="${{ inputs.ndk-version }}"
           export GHA_ANDROID_CMAKE_FLAGS="${{ env.android-cmake-flags }}"
@@ -504,23 +479,14 @@ jobs:
       - name: Normalize binaries for Android
         run: |
           rm -rf ${{ inputs.build-output-dir }}
-          mkdir -p ${{ inputs.build-output-dir }}/arm64-v8a
-          mkdir -p ${{ inputs.build-output-dir }}/x86_64
-          cp -L ${{ inputs.repo-path }}/build/arm64-v8a/${{ inputs.bin-name-android }} ${{ inputs.build-output-dir }}/arm64-v8a/${{ inputs.bin-name-android-normalized }}
-          cp -L ${{ inputs.repo-path }}/build/x86_64/${{ inputs.bin-name-android }} ${{ inputs.build-output-dir }}/x86_64/${{ inputs.bin-name-android-normalized }}
-          ls ${{ inputs.build-output-dir }}/arm64-v8a
-          ls ${{ inputs.build-output-dir }}/x86_64
-      - name: Upload Artifacts (android-arm64)
+          mkdir -p ${{ inputs.build-output-dir }}/${{ matrix.arch.cmake-arch }}
+          cp -L ${{ inputs.repo-path }}/build/${{ matrix.arch.cmake-arch }}/${{ inputs.bin-name-android }} ${{ inputs.build-output-dir }}/${{ matrix.arch.cmake-arch }}/${{ inputs.bin-name-android-normalized }}
+          ls ${{ inputs.build-output-dir }}/${{ matrix.arch.cmake-arch }}
+      - name: Upload Artifacts (android-${{ matrix.arch.arch }})
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ inputs.lib-name }}-android-arm64
-          path: ${{ inputs.build-output-dir }}/arm64-v8a/*.so
-          if-no-files-found: error
-      - name: Upload Artifacts (android-x64)
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ inputs.lib-name }}-android-x64
-          path: ${{ inputs.build-output-dir }}/x86_64/*.so
+          name: ${{ inputs.lib-name }}-${{ matrix.arch.rtid }}
+          path: ${{ inputs.build-output-dir }}/${{ matrix.arch.cmake-arch }}/*.so
           if-no-files-found: error
   create-pr:
     uses: ./.github/workflows/create-pr.yml
