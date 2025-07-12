@@ -266,12 +266,8 @@ jobs:
           cd ${{ inputs.repo-path }}
           git clone https://github.com/microsoft/vcpkg.git
           cd vcpkg
-          ./bootstrap-vcpkg.sh || ./bootstrap-vcpkg.bat
-          if [ -n "${{ matrix.vcpkg-triplet }}" ]; then
-            ./vcpkg install ${{ inputs.vcpkg-packages }} --triplet "${{ matrix.vcpkg-triplet }}"
-          else
-            ./vcpkg install ${{ inputs.vcpkg-packages }}
-          fi
+          ./bootstrap-vcpkg.sh
+          ./vcpkg install ${{ inputs.vcpkg-packages }} --triplet "${{ matrix.vcpkg-triplet }}"
       - name: Pre-Configure Setup
         if: inputs.pre-configure-steps != ''
         shell: bash
@@ -420,7 +416,7 @@ jobs:
           git clone https://github.com/microsoft/vcpkg.git
           cd vcpkg
           ./bootstrap-vcpkg.sh
-          ./vcpkg install ${{ inputs.vcpkg-packages }} --triplet ${{ matrix.arch.vcpkg-triplet }}
+          ./vcpkg install ${{ inputs.vcpkg-packages }} --triplet "${{ matrix.vcpkg-triplet }}"
           echo "VCPKG_TOOLCHAIN_FILE=./vcpkg/scripts/buildsystems/vcpkg.cmake" >> $GITHUB_ENV
       - name: Pre-Configure Setup (Android)
         if: inputs.pre-configure-steps != ''
@@ -428,10 +424,10 @@ jobs:
         run: |
           export GHA_RUNNER_OS="${{ matrix.os }}"
           export GHA_OS_NAME="${{ matrix.os-name }}"
-          export GHA_ARCH="${{ matrix.arch.arch }}"
-          export GHA_CMAKE_ARCH="${{ matrix.arch.cmake-arch }}"
-          export GHA_CMAKE_RTID="${{ matrix.arch.rtid }}"
-          export GHA_CMAKE_VCPKG_TRIPLET="${{ matrix.arch.vcpkg-triplet }}"
+          export GHA_ARCH="${{ matrix.arch }}"
+          export GHA_CMAKE_ARCH="${{ matrix.cmake-arch }}"
+          export GHA_CMAKE_RTID="${{ matrix.rtid }}"
+          export GHA_CMAKE_VCPKG_TRIPLET="${{ matrix.vcpkg-triplet }}"
           export GHA_ANDROID_API="${{ inputs.android-api }}"
           export GHA_ANDROID_NDK="${{ inputs.ndk-version }}"
           export GHA_ANDROID_CMAKE_FLAGS="${{ env.android-cmake-flags }}"
@@ -440,9 +436,9 @@ jobs:
         run: |
           cd ${{ inputs.repo-path }}
           if [ "${{ inputs.use-vcpkg }}" = "true" ]; then \
-            cmake -S . -B ./build/${{ matrix.arch.cmake-arch }} ${{ env.android-cmake-flags }} -DCMAKE_ANDROID_ARCH_ABI=${{ matrix.arch.cmake-arch }} -DCMAKE_ANDROID_API=${{ inputs.android-api }} ${{ inputs.cmake-flags }} ${{ inputs.cmake-flags-android }} -DCMAKE_TOOLCHAIN_FILE="./vcpkg/scripts/buildsystems/vcpkg.cmake" -DVCPKG_TARGET_TRIPLET=${{ matrix.arch.vcpkg-triplet }}; \
+            cmake -S . -B ./build/${{ matrix.cmake-arch }} ${{ env.android-cmake-flags }} -DCMAKE_ANDROID_ARCH_ABI=${{ matrix.cmake-arch }} -DCMAKE_ANDROID_API=${{ inputs.android-api }} ${{ inputs.cmake-flags }} ${{ inputs.cmake-flags-android }} -DCMAKE_TOOLCHAIN_FILE="./vcpkg/scripts/buildsystems/vcpkg.cmake" -DVCPKG_TARGET_TRIPLET=${{ matrix.vcpkg-triplet }}; \
           else \
-            cmake -S . -B ./build/${{ matrix.arch.cmake-arch }} ${{ env.android-cmake-flags }} -DCMAKE_ANDROID_ARCH_ABI=${{ matrix.arch.cmake-arch }} -DCMAKE_ANDROID_API=${{ inputs.android-api }} ${{ inputs.cmake-flags }} ${{ inputs.cmake-flags-android }}; \
+            cmake -S . -B ./build/${{ matrix.cmake-arch }} ${{ env.android-cmake-flags }} -DCMAKE_ANDROID_ARCH_ABI=${{ matrix.cmake-arch }} -DCMAKE_ANDROID_API=${{ inputs.android-api }} ${{ inputs.cmake-flags }} ${{ inputs.cmake-flags-android }}; \
           fi
       - name: Pre-Build Setup (Android)
         if: inputs.pre-build-steps != ''
@@ -450,10 +446,10 @@ jobs:
         run: |
           export GHA_RUNNER_OS="${{ matrix.os }}"
           export GHA_OS_NAME="${{ matrix.os-name }}"
-          export GHA_ARCH="${{ matrix.arch.arch }}"
-          export GHA_CMAKE_ARCH="${{ matrix.arch.cmake-arch }}"
-          export GHA_CMAKE_RTID="${{ matrix.arch.rtid }}"
-          export GHA_CMAKE_VCPKG_TRIPLET="${{ matrix.arch.vcpkg-triplet }}"
+          export GHA_ARCH="${{ matrix.arch }}"
+          export GHA_CMAKE_ARCH="${{ matrix.cmake-arch }}"
+          export GHA_CMAKE_RTID="${{ matrix.rtid }}"
+          export GHA_CMAKE_VCPKG_TRIPLET="${{ matrix.vcpkg-triplet }}"
           export GHA_ANDROID_API="${{ inputs.android-api }}"
           export GHA_ANDROID_NDK="${{ inputs.ndk-version }}"
           export GHA_ANDROID_CMAKE_FLAGS="${{ env.android-cmake-flags }}"
@@ -461,17 +457,17 @@ jobs:
       - name: Build
         run: |
           cd ${{ inputs.repo-path }}
-          cmake --build ./build/${{ matrix.arch.cmake-arch }} --config Release
+          cmake --build ./build/${{ matrix.cmake-arch }} --config Release
       - name: Post-Build Steps (Android)
         if: inputs.post-build-steps != ''
         shell: bash
         run: |
           export GHA_RUNNER_OS="${{ matrix.os }}"
           export GHA_OS_NAME="${{ matrix.os-name }}"
-          export GHA_ARCH="${{ matrix.arch.arch }}"
-          export GHA_CMAKE_ARCH="${{ matrix.arch.cmake-arch }}"
-          export GHA_CMAKE_RTID="${{ matrix.arch.rtid }}"
-          export GHA_CMAKE_VCPKG_TRIPLET="${{ matrix.arch.vcpkg-triplet }}"
+          export GHA_ARCH="${{ matrix.arch }}"
+          export GHA_CMAKE_ARCH="${{ matrix.cmake-arch }}"
+          export GHA_CMAKE_RTID="${{ matrix.rtid }}"
+          export GHA_CMAKE_VCPKG_TRIPLET="${{ matrix.vcpkg-triplet }}"
           export GHA_ANDROID_API="${{ inputs.android-api }}"
           export GHA_ANDROID_NDK="${{ inputs.ndk-version }}"
           export GHA_ANDROID_CMAKE_FLAGS="${{ env.android-cmake-flags }}"
@@ -479,14 +475,14 @@ jobs:
       - name: Normalize binaries for Android
         run: |
           rm -rf ${{ inputs.build-output-dir }}
-          mkdir -p ${{ inputs.build-output-dir }}/${{ matrix.arch.cmake-arch }}
-          cp -L ${{ inputs.repo-path }}/build/${{ matrix.arch.cmake-arch }}/${{ inputs.bin-name-android }} ${{ inputs.build-output-dir }}/${{ matrix.arch.cmake-arch }}/${{ inputs.bin-name-android-normalized }}
-          ls ${{ inputs.build-output-dir }}/${{ matrix.arch.cmake-arch }}
-      - name: Upload Artifacts (android-${{ matrix.arch.arch }})
+          mkdir -p ${{ inputs.build-output-dir }}/${{ matrix.cmake-arch }}
+          cp -L ${{ inputs.repo-path }}/build/${{ matrix.cmake-arch }}/${{ inputs.bin-name-android }} ${{ inputs.build-output-dir }}/${{ matrix.cmake-arch }}/${{ inputs.bin-name-android-normalized }}
+          ls ${{ inputs.build-output-dir }}/${{ matrix.cmake-arch }}
+      - name: Upload Artifacts (android-${{ matrix.arch }})
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ inputs.lib-name }}-${{ matrix.arch.rtid }}
-          path: ${{ inputs.build-output-dir }}/${{ matrix.arch.cmake-arch }}/*.so
+          name: ${{ inputs.lib-name }}-${{ matrix.rtid }}
+          path: ${{ inputs.build-output-dir }}/${{ matrix.cmake-arch }}/*.so
           if-no-files-found: error
   create-pr:
     uses: ./.github/workflows/create-pr.yml
