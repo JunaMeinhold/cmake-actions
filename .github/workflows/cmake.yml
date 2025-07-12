@@ -595,24 +595,13 @@ jobs:
           path: ${{ inputs.build-output-dir }}/${{ matrix.cmake-arch }}/*.so
           if-no-files-found: error
   create-pr:
-    env:
-      lib-version: ${{ inputs.lib-version }}
-    runs-on: ubuntu-latest
+    uses: ./.github/workflows/create-pr.yml
     needs: [build, build-android]
     if: inputs.create-pr == true
-    steps:
-      - name: Set lib-version if empty
-        run: |
-          if [ -z "${{ inputs.lib-version }}" ]; then
-            echo "lib-version=${{ inputs.repo-tag }}" >> $GITHUB_ENV
-          fi
-      - name: Create PR
-        uses: JunaMeinhold/cmake-actions/.github/workflows/create-pr.yml@1.x.x
-        with:
-          lib-name: ${{ inputs.lib-name }}
-          repo-tag: ${{ inputs.repo-tag }}
-          pr-output-dir: ${{ inputs.pr-output-dir }}
-          pr-branch: ${{ inputs.pr-branch }}
-          pr-base-branch: ${{ inputs.pr-base-branch }}
-          pr-reviewers: ${{ inputs.pr-reviewers }}
-          lib-version: ${{ env.lib-version }}
+    with:
+      lib-name: ${{ inputs.lib-name }}
+      lib-version: ${{ inputs.lib-version }}
+      pr-output-dir: ${{ inputs.pr-output-dir }}
+      pr-branch: ${{ inputs.pr-branch }}
+      pr-base-branch: ${{ inputs.pr-base-branch }}
+      pr-reviewers: ${{ inputs.pr-reviewers }}
