@@ -10,25 +10,25 @@ on:
         description: "Library name (e.g., Project)"
         required: true
         type: string
-      repo-tag:
-        description: "Repository tag or ref (e.g., v1.0.0)"
+      lib-version:
+        description: "Library version (e.g., v1.0.0)"
         required: true
         type: string
-      output-dir:
+      pr-output-dir:
         description: "Output directory for PR"
         required: true
         type: string
-      branch:
+      pr-target-branch:
         description: "Branch for PR"
         required: false
         default: native-artifacts-branch
         type: string
-      base:
+      pr-base-branch:
         description: "Base branch for PR"
         required: false
         default: master
         type: string
-      reviewers:
+      pr-reviewers:
         description: "Reviewers for PR"
         required: false
         default: ""
@@ -43,10 +43,10 @@ jobs:
       - name: Download all artifacts
         uses: actions/download-artifact@v4
         with:
-          path: ${{ inputs.output-dir }}
+          path: ${{ inputs.pr-output-dir }}
       - name: Trim Library Name
         run: |
-          cd ${{ inputs.output-dir }}
+          cd ${{ inputs.pr-output-dir }}
           shopt -s nullglob dotglob
           for artifact_dir in */; do
             if [ -d "$artifact_dir" ]; then
@@ -65,12 +65,12 @@ jobs:
       - name: Create a Pull Request
         uses: peter-evans/create-pull-request@v7
         with:
-          title: "Update native libraries for ${{ inputs.lib-name }} to version ${{ inputs.repo-tag }}"
-          body: "This pull request updates the native libraries in the ${{ inputs.output-dir }} folder to version ${{ inputs.repo-tag }}."
-          commit-message: "chore: update native libraries to version ${{ inputs.repo-tag }}"
-          add-paths: "${{ inputs.output-dir }}/*"
-          branch: ${{ inputs.branch }}
-          base: ${{ inputs.base }}
-          reviewers: ${{ inputs.reviewers }}
+          title: "Update native libraries for ${{ inputs.lib-name }} to version ${{ inputs.lib-version }}"
+          body: "This pull request updates the native libraries in the ${{ inputs.pr-output-dir }} folder to version ${{ inputs.lib-version }}."
+          commit-message: "chore: update native libraries to version ${{ inputs.lib-version }}"
+          add-paths: "${{ inputs.pr-output-dir }}/*"
+          branch: ${{ inputs.pr-target-branch }}
+          base: ${{ inputs.pr-base-branch }}
+          reviewers: ${{ inputs.pr-reviewers }}
           sign-commits: true
           delete-branch: true

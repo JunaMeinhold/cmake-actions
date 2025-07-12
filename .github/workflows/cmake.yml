@@ -3,9 +3,34 @@ name: Build and Upload Native Artifacts
 on:
   workflow_call:
     inputs:
+      enable-linux:
+        description: "Enable Linux builds."
+        required: false
+        default: true
+        type: boolean
+      enable-macos:
+        description: "Enable macOS builds."
+        required: false
+        default: true
+        type: boolean
+      enable-windows:
+        description: "Enable Windows builds."
+        required: false
+        default: true
+        type: boolean
+      enable-android:
+        description: "Enable Android builds."
+        required: false
+        default: true
+        type: boolean
       lib-name:
         description: "Library name (e.g., Project)"
         required: true
+        type: string
+      lib-version:
+        description: "Library version (optional, if not set then repo-tag will be used)"
+        required: false
+        default: ""
         type: string
       repo:
         description: "Repository to checkout (e.g., org/project)"
@@ -25,26 +50,30 @@ on:
         required: false
         default: false
         type: boolean
-      cmake-flags:
-        description: "CMake flags"
+      pr-base-branch:
+        description: "Base branch for PR"
         required: false
-        default: "-DCMAKE_BUILD_TYPE=Release"
+        default: master
         type: string
-      ndk-version:
-        description: "Android NDK version"
+      pr-target-branch:
+        description: "Branch for PR"
         required: false
-        default: "26.3.11579264"
+        default: native-artifacts-branch
         type: string
-      android-api:
-        description: "Android API version"
+      pr-output-dir:
+        description: "Output directory for PR"
+        required: true
+        type: string
+      pr-reviewers:
+        description: "Reviewers for PR"
         required: false
-        default: "21"
+        default: ""
         type: string
-      build-output-dir:
-        description: "Build output directory"
+      create-pr:
+        description: "Whether to create a pull request"
         required: false
-        default: artifacts
-        type: string
+        default: true
+        type: boolean
       bin-name-osx:
         description: "macOS binary name"
         required: true
@@ -77,22 +106,63 @@ on:
         description: "Normalized Windows binary name"
         required: true
         type: string
-      base:
-        description: "Base branch for PR"
+      build-output-dir:
+        description: "Build output directory"
         required: false
-        default: master
+        default: artifacts
         type: string
-      branch:
-        description: "Branch for PR"
+      cmake-flags:
+        description: "CMake flags"
         required: false
-        default: native-artifacts-branch
+        default: "-DCMAKE_BUILD_TYPE=Release"
         type: string
-      output-dir:
-        description: "Output directory for PR"
-        required: true
+      cmake-flags-linux:
+        description: "Additional CMake flags for Linux."
+        required: false
+        default: ""
         type: string
-      reviewers:
-        description: "Reviewers for PR"
+      cmake-flags-macos:
+        description: "Additional CMake flags for macOS."
+        required: false
+        default: ""
+        type: string
+      cmake-flags-windows:
+        description: "Additional CMake flags for Windows."
+        required: false
+        default: ""
+        type: string
+      cmake-flags-android:
+        description: "Additional CMake flags for Android."
+        required: false
+        default: ""
+        type: string
+      pre-configure-steps:
+        description: "Commands to run before CMake configure (optional)"
+        required: false
+        default: ""
+        type: string
+      ndk-version:
+        description: "Android NDK version"
+        required: false
+        default: "26.3.11579264"
+        type: string
+      android-api:
+        description: "Android API version"
+        required: false
+        default: "21"
+        type: string
+      android-deps:
+        description: "Space-separated list of Ubuntu packages to install before build."
+        required: false
+        default: "build-essential cmake ninja-build wget"
+        type: string
+      pre-build-steps:
+        description: "Commands to run before building (optional)"
+        required: false
+        default: ""
+        type: string
+      post-build-steps:
+        description: "Commands to run after build (optional)"
         required: false
         default: ""
         type: string
@@ -110,11 +180,6 @@ on:
         description: "Space-separated list of Homebrew packages to install before build."
         required: false
         default: ""
-        type: string
-      android-deps:
-        description: "Space-separated list of Ubuntu packages to install before build."
-        required: false
-        default: "build-essential cmake ninja-build wget"
         type: string
       use-vcpkg:
         description: "Set to true to enable vcpkg integration."
@@ -166,46 +231,6 @@ on:
         required: false
         default: ""
         type: string
-      cmake-flags-linux:
-        description: "Additional CMake flags for Linux."
-        required: false
-        default: ""
-        type: string
-      cmake-flags-macos:
-        description: "Additional CMake flags for macOS."
-        required: false
-        default: ""
-        type: string
-      cmake-flags-windows:
-        description: "Additional CMake flags for Windows."
-        required: false
-        default: ""
-        type: string
-      cmake-flags-android:
-        description: "Additional CMake flags for Android."
-        required: false
-        default: ""
-        type: string
-      pre-build-steps:
-        description: "Commands to run before building (optional)"
-        required: false
-        default: ""
-        type: string
-      pre-configure-steps:
-        description: "Commands to run before CMake configure (optional)"
-        required: false
-        default: ""
-        type: string
-      post-build-steps:
-        description: "Commands to run after build (optional)"
-        required: false
-        default: ""
-        type: string
-      create-pr:
-        description: "Whether to create a pull request"
-        required: false
-        default: true
-        type: boolean
       setup-vulkan:
         description: "Whether to setup Vulkan SDK (optional)"
         required: false
@@ -240,26 +265,6 @@ on:
         description: "Whether to use Vulkan SDK cache (optional)"
         required: false
         default: false
-        type: boolean
-      enable-linux:
-        description: "Enable Linux builds."
-        required: false
-        default: true
-        type: boolean
-      enable-macos:
-        description: "Enable macOS builds."
-        required: false
-        default: true
-        type: boolean
-      enable-windows:
-        description: "Enable Windows builds."
-        required: false
-        default: true
-        type: boolean
-      enable-android:
-        description: "Enable Android builds."
-        required: false
-        default: true
         type: boolean
 
 jobs:
@@ -590,13 +595,24 @@ jobs:
           path: ${{ inputs.build-output-dir }}/${{ matrix.cmake-arch }}/*.so
           if-no-files-found: error
   create-pr:
-    uses: ./.github/workflows/create-pr.yml
+    env:
+      lib-version: ${{ inputs.lib-version }}
+    runs-on: ubuntu-latest
     needs: [build, build-android]
     if: inputs.create-pr == true
-    with:
-      lib-name: ${{ inputs.lib-name }}
-      repo-tag: ${{ inputs.repo-tag }}
-      output-dir: ${{ inputs.output-dir }}
-      branch: ${{ inputs.branch }}
-      base: ${{ inputs.base }}
-      reviewers: ${{ inputs.reviewers }}
+    steps:
+      - name: Set lib-version if empty
+        run: |
+          if [ -z "${{ inputs.lib-version }}" ]; then
+            echo "lib-version=${{ inputs.repo-tag }}" >> $GITHUB_ENV
+          fi
+      - name: Create PR
+        uses: ./.github/workflows/create-pr.yml
+        with:
+          lib-name: ${{ inputs.lib-name }}
+          repo-tag: ${{ inputs.repo-tag }}
+          pr-output-dir: ${{ inputs.pr-output-dir }}
+          pr-target-branch: ${{ inputs.pr-target-branch }}
+          pr-base-branch: ${{ inputs.pr-base-branch }}
+          pr-reviewers: ${{ inputs.pr-reviewers }}
+          lib-version: ${{ env.lib-version }}
