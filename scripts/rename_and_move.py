@@ -36,16 +36,32 @@ def main(artifact_dir: str, repo_root: str, manifest_path: str) -> None:
 
             libname: str = '-'.join(parts[:-2])
             rtid: str = '-'.join(parts[-2:])
-            dest_dir: Optional[str] = move_map.get(libname)
-            if dest_dir:
+            map_dest_dir: Optional[str] = move_map.get(libname)
+            if map_dest_dir:
+                dest_dir: str = map_dest_dir
                 if repo_root:
                     dest_dir = os.path.join(repo_root, dest_dir)
-                dest_rtid_path: str = os.path.join(dest_dir, rtid)
-                os.makedirs(dest_rtid_path, exist_ok=True)
-                print(f"Moving contents from {entry} to {dest_rtid_path}")
-                for item in os.listdir(entry_path):
-                    shutil.move(os.path.join(entry_path, item), dest_rtid_path)
-                os.rmdir(entry_path)
+                    
+                print(f"Moving contents from {entry} to {dest_dir}")
+                dest_dir = os.path.join(dest_dir, rtid)
+                
+                walk_stack: list[tuple[str,str]] = [(entry_path, dest_dir)]
+                while len(walk_stack) > 0:
+                    cur = walk_stack.pop()
+                    cur_src_dir = cur[0]
+                    cur_dst_dir = cur[1]
+                    os.makedirs(cur_dst_dir, exist_ok=True)
+                    for item in os.listdir(cur[0]):
+                        src_path = os.path.join(cur_src_dir, item)
+                        dst_path = os.path.join(cur_dst_dir, item)
+                        if (os.path.isdir(src_path)):
+                            walk_stack.append((src_path, dst_path))
+                        else:
+                            if os.path.exists(dst_path):
+                                os.remove(dst_path)
+                            shutil.move(src_path, dst_path)
+                    
+                shutil.rmtree(entry_path)
             else:
                 print(f"Library {libname} has no mapping in map. Skipping.")
 
