@@ -49,7 +49,7 @@ def main(artifact_dir: str, repo_root: str, manifest_path: str) -> None:
                 print(f"Library {libname} has no mapping in map. Skipping.")
 
 if __name__ == "__main__":
-    if len(sys.argv) == 3:
+    if len(sys.argv) == 4:
         artifact_dir: str = sys.argv[1]
         repo_root: str = sys.argv[2]
         manifest_path: str = sys.argv[3]
