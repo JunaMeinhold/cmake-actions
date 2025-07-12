@@ -48,7 +48,7 @@ jobs:
         with:
           repository: "JunaMeinhold/cmake-actions"
           path: "cmake-actions"
-          ref: "1.x.x"
+          ref: "v1.x.x"
           submodules: false
 
       - name: Download all artifacts
