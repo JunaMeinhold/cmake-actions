@@ -1,0 +1,52 @@
+name: Test Create PR Workflow
+
+description: |
+  Test the reusable create-pr workflow with sample data.
+
+on:
+  workflow_dispatch:
+
+jobs:
+  create-dummy-artifacts-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create dummy files
+        run: |
+          mkdir -p artifacts
+          echo "test content" > artifacts/testfile.so
+      - name: Upload dummy artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: TestLib-linux-x64
+          path: artifacts/*.so
+
+  create-dummy-artifacts-windows:
+    runs-on: windows-latest
+    steps:
+      - name: Create dummy file
+        run: |
+          mkdir -p artifacts
+          echo "another content" > artifacts/anotherfile.dll
+      - name: Upload another dummy artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: AnotherLib-windows-arm64
+          path: artifacts/*.dll
+
+  test-create-pr:
+    needs: [create-dummy-artifacts-windows, create-dummy-artifacts-linux]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout test repository
+        uses: actions/checkout@v4
+        with:
+          path: test-repo
+
+      - name: Call reusable create-pr workflow
+        uses: ./.github/workflows/create-pr.yml
+        with:
+          lib-name: "TestLib"
+          lib-version: "v1.2.3"
+          pr-branch: "test-artifacts-branch"
+          pr-base-branch: "main"
+          pr-output-map: '{"TestLib": "ProjectA/native", "AnotherLib": "ProjectB/native"}'
