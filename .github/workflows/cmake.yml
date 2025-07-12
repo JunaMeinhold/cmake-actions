@@ -607,7 +607,7 @@ jobs:
             echo "lib-version=${{ inputs.repo-tag }}" >> $GITHUB_ENV
           fi
       - name: Create PR
-        uses: ./.github/workflows/create-pr.yml
+        uses: JunaMeinhold/cmake-actions/.github/workflows/create-pr.yml@1.x.x
         with:
           lib-name: ${{ inputs.lib-name }}
           repo-tag: ${{ inputs.repo-tag }}
