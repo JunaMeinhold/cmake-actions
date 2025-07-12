@@ -141,6 +141,26 @@ on:
         required: false
         default: ""
         type: string
+      vcpkg-packages-linux:
+        description: "Space-separated list of vcpkg packages to install on Linux."
+        required: false
+        default: ""
+        type: string
+      vcpkg-packages-macos:
+        description: "Space-separated list of vcpkg packages to install on macOS."
+        required: false
+        default: ""
+        type: string
+      vcpkg-packages-windows:
+        description: "Space-separated list of vcpkg packages to install on Windows."
+        required: false
+        default: ""
+        type: string
+      vcpkg-packages-android:
+        description: "Space-separated list of vcpkg packages to install on Android."
+        required: false
+        default: ""
+        type: string
       cmake-flags-linux:
         description: "Additional CMake flags for Linux."
         required: false
@@ -330,7 +350,13 @@ jobs:
           git clone https://github.com/microsoft/vcpkg.git
           cd vcpkg
           ./bootstrap-vcpkg.sh
-          ./vcpkg install ${{ inputs.vcpkg-packages }} --triplet "${{ matrix.vcpkg-triplet }}"
+          if [ "${{ matrix.os-name }}" = "linux" ]; then
+            ./vcpkg install ${{ inputs.vcpkg-packages }} ${{ inputs.vcpkg-packages-linux }} --triplet "${{ matrix.vcpkg-triplet }}"
+          elif [ "${{ matrix.os-name }}" = "macos" ]; then
+            ./vcpkg install ${{ inputs.vcpkg-packages }} ${{ inputs.vcpkg-packages-macos }} --triplet "${{ matrix.vcpkg-triplet }}"
+          elif [ "${{ matrix.os-name }}" = "windows" ]; then
+            ./vcpkg install ${{ inputs.vcpkg-packages }} ${{ inputs.vcpkg-packages-windows }} --triplet "${{ matrix.vcpkg-triplet }}"
+          fi
       - name: Pre-Configure Setup
         if: matrix.enable == true && inputs.pre-configure-steps != ''
         shell: bash
@@ -484,7 +510,7 @@ jobs:
           git clone https://github.com/microsoft/vcpkg.git
           cd vcpkg
           ./bootstrap-vcpkg.sh
-          ./vcpkg install ${{ inputs.vcpkg-packages }} --triplet "${{ matrix.vcpkg-triplet }}"
+          ./vcpkg install ${{ inputs.vcpkg-packages }} ${{ inputs.vcpkg-packages-android }} --triplet "${{ matrix.vcpkg-triplet }}"
           echo "VCPKG_TOOLCHAIN_FILE=./vcpkg/scripts/buildsystems/vcpkg.cmake" >> $GITHUB_ENV
       - name: Pre-Configure Setup (Android)
         if: matrix.enable == true && inputs.pre-configure-steps != ''
