@@ -6,20 +6,21 @@ import shutil
 from typing import Dict, List, Optional
 
 def resolve_manifest_path(manifest_path: str, repo_root: str) -> str:
-    # If path ends with / or \, treat as directory and append manifest.json
+    manifest_path = os.path.normpath(manifest_path)
+    # If path ends with / or \, treat as directory and append hexa-workflows.json
     if manifest_path.endswith("/") or manifest_path.endswith("\\"):
-        manifest_path = os.path.join(manifest_path, "manifest.json")
+        manifest_path = os.path.join(manifest_path, "hexa-workflows.json")
     # If path starts with /, resolve under repo_root (strip leading /)
     if manifest_path.startswith("/"):
         candidate = os.path.join(repo_root, manifest_path.lstrip("/\\"))
         if os.path.isfile(candidate):
             return candidate
         raise FileNotFoundError(f"Manifest file not found in repo_root: {candidate}")
-    # Otherwise, always resolve under repo_root/cmake-actions/
-    candidate = os.path.join(repo_root, "cmake-actions", manifest_path)
+    # Otherwise, always resolve under repo_root/hexa-workflows/
+    candidate = os.path.join(repo_root, "hexa-workflows", manifest_path)
     if os.path.isfile(candidate):
         return candidate
-    raise FileNotFoundError(f"Manifest file not found in repo_root/cmake-actions/: {candidate}")
+    raise FileNotFoundError(f"Manifest file not found in repo_root/hexa-workflows/: {candidate}")
 
 def main(artifact_dir: str, repo_root: str, manifest_path: str) -> None:
     manifest_path_resolved = resolve_manifest_path(manifest_path, repo_root)
