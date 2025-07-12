@@ -54,6 +54,7 @@ jobs:
               rtid=$(echo "$artifact_name" | awk -F'-' '{print $(NF-1)"-"$NF}')
               if [ "$artifact_name" != "$rtid" ]; then
                 mkdir -p "$rtid"
+                echo "$artifact_name"
                 find "$artifact_dir" -mindepth 1 -maxdepth 1 -type f -exec mv -t "$rtid" {} +
                 if [ -z "$(ls -A "$artifact_dir")" ]; then
                   rmdir "$artifact_dir"
