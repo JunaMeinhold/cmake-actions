@@ -35,18 +35,10 @@ jobs:
 
   test-create-pr:
     needs: [create-dummy-artifacts-windows, create-dummy-artifacts-linux]
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout test repository
-        uses: actions/checkout@v4
-        with:
-          path: test-repo
-
-      - name: Call reusable create-pr workflow
-        uses: ./.github/workflows/create-pr.yml
-        with:
-          lib-name: "TestLib"
-          lib-version: "v1.2.3"
-          pr-branch: "test-artifacts-branch"
-          pr-base-branch: "main"
-          pr-output-map: '{"TestLib": "ProjectA/native", "AnotherLib": "ProjectB/native"}'
+    uses: ./.github/workflows/create-pr.yml
+    with:
+        lib-name: "TestLib"
+        lib-version: "v1.2.3"
+        pr-branch: "test-artifacts-branch"
+        pr-base-branch: "main"
+        pr-output-map: '{"TestLib": "ProjectA/native", "AnotherLib": "ProjectB/native"}'
