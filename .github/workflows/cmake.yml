@@ -50,30 +50,6 @@ on:
         required: false
         default: false
         type: boolean
-      pr-base-branch:
-        description: "Base branch for PR"
-        required: false
-        default: master
-        type: string
-      pr-branch:
-        description: "Branch for PR"
-        required: false
-        default: native-artifacts-branch
-        type: string
-      pr-output-map:
-        description: "Output map for PR"
-        required: true
-        type: string
-      pr-reviewers:
-        description: "Reviewers for PR"
-        required: false
-        default: ""
-        type: string
-      create-pr:
-        description: "Whether to create a pull request"
-        required: false
-        default: true
-        type: boolean
       bin-name-osx:
         description: "macOS binary name"
         required: true
@@ -594,14 +570,3 @@ jobs:
           name: ${{ inputs.lib-name }}-${{ matrix.rtid }}
           path: ${{ inputs.build-output-dir }}/${{ matrix.cmake-arch }}/*.so
           if-no-files-found: error
-  create-pr:
-    uses: ./.github/workflows/create-pr.yml
-    needs: [build, build-android]
-    if: inputs.create-pr == true
-    with:
-      lib-name: ${{ inputs.lib-name }}
-      lib-version: ${{ inputs.lib-version }}
-      pr-output-map: ${{ inputs.pr-output-map }}
-      pr-branch: ${{ inputs.pr-branch }}
-      pr-base-branch: ${{ inputs.pr-base-branch }}
-      pr-reviewers: ${{ inputs.pr-reviewers }}
