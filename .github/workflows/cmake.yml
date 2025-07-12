@@ -60,8 +60,8 @@ on:
         required: false
         default: native-artifacts-branch
         type: string
-      pr-output-dir:
-        description: "Output directory for PR"
+      pr-output-map:
+        description: "Output map for PR"
         required: true
         type: string
       pr-reviewers:
@@ -601,7 +601,7 @@ jobs:
     with:
       lib-name: ${{ inputs.lib-name }}
       lib-version: ${{ inputs.lib-version }}
-      pr-output-dir: ${{ inputs.pr-output-dir }}
+      pr-output-map: ${{ inputs.pr-output-map }}
       pr-branch: ${{ inputs.pr-branch }}
       pr-base-branch: ${{ inputs.pr-base-branch }}
       pr-reviewers: ${{ inputs.pr-reviewers }}

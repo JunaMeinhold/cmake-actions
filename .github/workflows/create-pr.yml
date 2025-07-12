@@ -14,10 +14,6 @@ on:
         description: "Library version (e.g., v1.0.0)"
         required: true
         type: string
-      pr-output-dir:
-        description: "Output directory for PR"
-        required: true
-        type: string
       pr-branch:
         description: "Branch for PR"
         required: false
@@ -33,6 +29,10 @@ on:
         required: false
         default: ""
         type: string
+      pr-output-map:
+        description: "Key-value map of library names to output paths"
+        required: true
+        type: string
 
 jobs:
   create-pr:
@@ -40,35 +40,32 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          path: "repo"
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          repository: "JunaMeinhold/cmake-actions"
+          path: "cmake-actions"
+          ref: "1.x.x"
+          submodules: false
+
       - name: Download all artifacts
         uses: actions/download-artifact@v4
         with:
-          path: ${{ inputs.pr-output-dir }}
-      - name: Trim Library Name
-        run: |
-          cd ${{ inputs.pr-output-dir }}
-          shopt -s nullglob dotglob
-          for artifact_dir in */; do
-            if [ -d "$artifact_dir" ]; then
-              artifact_name="${artifact_dir%/}"
-              rtid=$(echo "$artifact_name" | awk -F'-' '{print $(NF-1)"-"$NF}')
-              if [ "$artifact_name" != "$rtid" ]; then
-                mkdir -p "$rtid"
-                echo "$artifact_name"
-                find "$artifact_dir" -mindepth 1 -maxdepth 1 -type f -exec mv -t "$rtid" {} +
-                if [ -z "$(ls -A "$artifact_dir")" ]; then
-                  rmdir "$artifact_dir"
-                fi
-              fi
-            fi
-          done
+          path: artifacts
+
+      - name: Rename and move artifacts
+        run: python cmake-actions/scripts/rename_and_move.py "./artifacts" "./repo" "${{ inputs.pr-output-map }}"
+
       - name: Create a Pull Request
         uses: peter-evans/create-pull-request@v7
         with:
+          path: "repo"
           title: "Update native libraries for ${{ inputs.lib-name }} to the latest version (${{ inputs.lib-version }})"
-          body: "This pull request updates the native libraries in the ${{ inputs.pr-output-dir }} folder to the latest version (${{ inputs.lib-version }})."
+          body: "This pull request updates the native libraries to the latest version (${{ inputs.lib-version }})."
           commit-message: "chore: update native libraries to the latest version (${{ inputs.lib-version }})"
-          add-paths: "${{ inputs.pr-output-dir }}/*"
           branch: ${{ inputs.pr-branch }}
           base: ${{ inputs.pr-base-branch }}
           reviewers: ${{ inputs.pr-reviewers }}
