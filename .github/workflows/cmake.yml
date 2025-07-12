@@ -55,7 +55,7 @@ on:
         required: false
         default: master
         type: string
-      pr-target-branch:
+      pr-branch:
         description: "Branch for PR"
         required: false
         default: native-artifacts-branch
@@ -612,7 +612,7 @@ jobs:
           lib-name: ${{ inputs.lib-name }}
           repo-tag: ${{ inputs.repo-tag }}
           pr-output-dir: ${{ inputs.pr-output-dir }}
-          pr-target-branch: ${{ inputs.pr-target-branch }}
+          pr-branch: ${{ inputs.pr-branch }}
           pr-base-branch: ${{ inputs.pr-base-branch }}
           pr-reviewers: ${{ inputs.pr-reviewers }}
           lib-version: ${{ env.lib-version }}

@@ -18,7 +18,7 @@ on:
         description: "Output directory for PR"
         required: true
         type: string
-      pr-target-branch:
+      pr-branch:
         description: "Branch for PR"
         required: false
         default: native-artifacts-branch
@@ -69,7 +69,7 @@ jobs:
           body: "This pull request updates the native libraries in the ${{ inputs.pr-output-dir }} folder to version ${{ inputs.lib-version }}."
           commit-message: "chore: update native libraries to version ${{ inputs.lib-version }}"
           add-paths: "${{ inputs.pr-output-dir }}/*"
-          branch: ${{ inputs.pr-target-branch }}
+          branch: ${{ inputs.pr-branch }}
           base: ${{ inputs.pr-base-branch }}
           reviewers: ${{ inputs.pr-reviewers }}
           sign-commits: true
