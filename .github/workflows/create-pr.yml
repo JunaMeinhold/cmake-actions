@@ -32,7 +32,7 @@ on:
       pr-manifest-path:
         description: "Path to the manifest file in the checked-out repo"
         required: false
-        default: cmake-actions/manifest.json
+        default: hexa-workflows/hexa-workflows.json
         type: string
 
 jobs:
