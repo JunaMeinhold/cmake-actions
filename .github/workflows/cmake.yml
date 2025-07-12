@@ -111,6 +111,11 @@ on:
         required: false
         default: ""
         type: string
+      android-deps:
+        description: "Space-separated list of Ubuntu packages to install before build."
+        required: false
+        default: "build-essential cmake ninja-build wget"
+        type: string
       use-vcpkg:
         description: "Set to true to enable vcpkg integration."
         required: false
@@ -455,6 +460,8 @@ jobs:
             ${{ inputs.build-output-dir }}/*.dylib
           if-no-files-found: error
   build-android:
+    env:
+      android-cmake-flags: -G "Ninja" -DCMAKE_SYSTEM_NAME=Android -DCMAKE_ANDROID_NDK=$ANDROID_NDK_HOME -DCMAKE_ANDROID_NDK_TOOLCHAIN_VERSION=clang -DCMAKE_ANDROID_STL_TYPE=c++_shared -DANDROID_NDK=$ANDROID_NDK_HOME
     runs-on: ubuntu-latest
     if: inputs.enable-android == true
     strategy:
@@ -488,7 +495,7 @@ jobs:
         if: matrix.enable == true
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential cmake ninja-build
+          sudo apt-get install -y ${{ inputs.android-deps }}
       - name: Setup Java
         uses: actions/setup-java@v3
         with:
@@ -524,16 +531,16 @@ jobs:
           export GHA_CMAKE_VCPKG_TRIPLET="${{ matrix.vcpkg-triplet }}"
           export GHA_ANDROID_API="${{ inputs.android-api }}"
           export GHA_ANDROID_NDK="${{ inputs.ndk-version }}"
-          export GHA_ANDROID_CMAKE_FLAGS="-G 'Ninja' -DCMAKE_SYSTEM_NAME=Android -DCMAKE_ANDROID_NDK=$ANDROID_NDK_HOME -DCMAKE_ANDROID_NDK_TOOLCHAIN_VERSION=clang -DCMAKE_ANDROID_STL_TYPE=c++_shared -DANDROID_NDK=$ANDROID_NDK_HOME"
+          export GHA_ANDROID_CMAKE_FLAGS="${{ env.android-cmake-flags }}"
           ${{ inputs.pre-configure-steps }}
       - name: Configure
         if: matrix.enable == true
         run: |
           cd ${{ inputs.repo-path }}
           if [ "${{ inputs.use-vcpkg }}" = "true" ] && [ "${{ inputs.use-vcpkg-android }}" = "true" ]; then \
-            cmake -S . -B ./build -G "Ninja" -DCMAKE_SYSTEM_NAME=Android -DCMAKE_ANDROID_NDK=$ANDROID_NDK_HOME -DCMAKE_ANDROID_NDK_TOOLCHAIN_VERSION=clang -DCMAKE_ANDROID_STL_TYPE=c++_shared -DANDROID_NDK=$ANDROID_NDK_HOME -DCMAKE_ANDROID_ARCH_ABI=${{ matrix.cmake-arch }} -DCMAKE_ANDROID_API=${{ inputs.android-api }} ${{ inputs.cmake-flags }} ${{ inputs.cmake-flags-android }} -DCMAKE_TOOLCHAIN_FILE="./vcpkg/scripts/buildsystems/vcpkg.cmake" -DVCPKG_TARGET_TRIPLET=${{ matrix.vcpkg-triplet }}; \
+            cmake -S . -B ./build ${{ env.android-cmake-flags }} -DCMAKE_ANDROID_ARCH_ABI=${{ matrix.cmake-arch }} -DCMAKE_ANDROID_API=${{ inputs.android-api }} ${{ inputs.cmake-flags }} ${{ inputs.cmake-flags-android }} -DCMAKE_TOOLCHAIN_FILE="./vcpkg/scripts/buildsystems/vcpkg.cmake" -DVCPKG_TARGET_TRIPLET=${{ matrix.vcpkg-triplet }}; \
           else \
-            cmake -S . -B ./build -G "Ninja" -DCMAKE_SYSTEM_NAME=Android -DCMAKE_ANDROID_NDK=$ANDROID_NDK_HOME -DCMAKE_ANDROID_NDK_TOOLCHAIN_VERSION=clang -DCMAKE_ANDROID_STL_TYPE=c++_shared -DANDROID_NDK=$ANDROID_NDK_HOME -DCMAKE_ANDROID_ARCH_ABI=${{ matrix.cmake-arch }} -DCMAKE_ANDROID_API=${{ inputs.android-api }} ${{ inputs.cmake-flags }} ${{ inputs.cmake-flags-android }}; \
+            cmake -S . -B ./build ${{ env.android-cmake-flags }} -DCMAKE_ANDROID_ARCH_ABI=${{ matrix.cmake-arch }} -DCMAKE_ANDROID_API=${{ inputs.android-api }} ${{ inputs.cmake-flags }} ${{ inputs.cmake-flags-android }}; \
           fi
       - name: Pre-Build Setup (Android)
         if: matrix.enable == true && inputs.pre-build-steps != ''
@@ -547,7 +554,7 @@ jobs:
           export GHA_CMAKE_VCPKG_TRIPLET="${{ matrix.vcpkg-triplet }}"
           export GHA_ANDROID_API="${{ inputs.android-api }}"
           export GHA_ANDROID_NDK="${{ inputs.ndk-version }}"
-          export GHA_ANDROID_CMAKE_FLAGS="-G 'Ninja' -DCMAKE_SYSTEM_NAME=Android -DCMAKE_ANDROID_NDK=$ANDROID_NDK_HOME -DCMAKE_ANDROID_NDK_TOOLCHAIN_VERSION=clang -DCMAKE_ANDROID_STL_TYPE=c++_shared -DANDROID_NDK=$ANDROID_NDK_HOME"
+          export GHA_ANDROID_CMAKE_FLAGS="${{ env.android-cmake-flags }}"
           ${{ inputs.pre-build-steps }}
       - name: Build
         if: matrix.enable == true
@@ -566,7 +573,7 @@ jobs:
           export GHA_CMAKE_VCPKG_TRIPLET="${{ matrix.vcpkg-triplet }}"
           export GHA_ANDROID_API="${{ inputs.android-api }}"
           export GHA_ANDROID_NDK="${{ inputs.ndk-version }}"
-          export GHA_ANDROID_CMAKE_FLAGS="-G 'Ninja' -DCMAKE_SYSTEM_NAME=Android -DCMAKE_ANDROID_NDK=$ANDROID_NDK_HOME -DCMAKE_ANDROID_NDK_TOOLCHAIN_VERSION=clang -DCMAKE_ANDROID_STL_TYPE=c++_shared -DANDROID_NDK=$ANDROID_NDK_HOME"
+          export GHA_ANDROID_CMAKE_FLAGS="${{ env.android-cmake-flags }}"
           ${{ inputs.post-build-steps }}
       - name: Normalize binaries for Android
         if: matrix.enable == true
