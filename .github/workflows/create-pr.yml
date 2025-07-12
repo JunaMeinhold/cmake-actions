@@ -29,9 +29,10 @@ on:
         required: false
         default: ""
         type: string
-      pr-output-map:
-        description: "Key-value map of library names to output paths"
-        required: true
+      pr-manifest-path:
+        description: "Path to the manifest file in the checked-out repo"
+        required: false
+        default: cmake-actions/manifest.json
         type: string
 
 jobs:
@@ -57,7 +58,7 @@ jobs:
           path: artifacts
 
       - name: Rename and move artifacts
-        run: python cmake-actions/scripts/rename_and_move.py "./artifacts" "./repo" '${{ inputs.pr-output-map }}'
+        run: python cmake-actions/scripts/rename_and_move.py "./artifacts" "./repo" "./repo/${{ inputs.pr-manifest-path }}"
 
       - name: Create a Pull Request
         uses: peter-evans/create-pull-request@v7
