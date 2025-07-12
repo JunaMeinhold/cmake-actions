@@ -20,6 +20,11 @@ on:
         required: false
         default: src
         type: string
+      checkout-self:
+        description: "Whether to checkout this workflow's repository (true/false)"
+        required: false
+        default: false
+        type: boolean
       cmake-flags:
         description: "CMake flags"
         required: false
@@ -227,6 +232,8 @@ jobs:
             vcpkg-triplet: arm64-osx
     steps:
       - uses: actions/checkout@v4
+        if: inputs.checkout-self
+      - uses: actions/checkout@v4
         with:
           repository: "${{ inputs.repo }}"
           ref: "${{ inputs.repo-tag }}"
@@ -365,6 +372,8 @@ jobs:
     env:
       android-cmake-flags: -G "Ninja" -DCMAKE_SYSTEM_NAME=Android -DCMAKE_ANDROID_NDK=$ANDROID_NDK_HOME -DCMAKE_ANDROID_NDK_TOOLCHAIN_VERSION=clang -DCMAKE_ANDROID_STL_TYPE=c++_shared -DANDROID_NDK=$ANDROID_NDK_HOME
     steps:
+      - uses: actions/checkout@v4
+        if: inputs.checkout-self
       - uses: actions/checkout@v4
         with:
           repository: "${{ inputs.repo }}"
