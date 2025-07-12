@@ -6,7 +6,6 @@ import shutil
 from typing import Dict, List, Optional
 
 def resolve_manifest_path(manifest_path: str, repo_root: str) -> str:
-    manifest_path = os.path.normpath(manifest_path)
     # If path ends with / or \, treat as directory and append hexa-workflows.json
     if manifest_path.endswith("/") or manifest_path.endswith("\\"):
         manifest_path = os.path.join(manifest_path, "hexa-workflows.json")
