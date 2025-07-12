@@ -216,6 +216,26 @@ on:
         required: false
         default: false
         type: boolean
+      enable-linux:
+        description: "Enable Linux builds."
+        required: false
+        default: true
+        type: boolean
+      enable-macos:
+        description: "Enable macOS builds."
+        required: false
+        default: true
+        type: boolean
+      enable-windows:
+        description: "Enable Windows builds."
+        required: false
+        default: true
+        type: boolean
+      enable-android:
+        description: "Enable Android builds."
+        required: false
+        default: true
+        type: boolean
 
 jobs:
   build:
@@ -229,73 +249,81 @@ jobs:
             cmake-arch: x64
             rtid: linux-x64
             vcpkg-triplet: x64-linux
+            enable: ${{ inputs.enable-linux }}
           - os: ubuntu-24.04-arm
             os-name: linux
             arch: arm64
             cmake-arch: aarch64
             rtid: linux-arm64
             vcpkg-triplet: arm64-linux
+            enable: ${{ inputs.enable-linux }}
           - os: windows-latest
             os-name: windows
             arch: x86_64
             cmake-arch: x64
             rtid: win-x64
             vcpkg-triplet: x64-windows-static
+            enable: ${{ inputs.enable-windows }}
           - os: windows-latest
             os-name: windows
             arch: x86
             cmake-arch: win32
             rtid: win-x86
             vcpkg-triplet: x86-windows-static
+            enable: ${{ inputs.enable-windows }}
           - os: windows-latest
             os-name: windows
             arch: arm64
             cmake-arch: arm64
             rtid: win-arm64
             vcpkg-triplet: arm64-windows-static
+            enable: ${{ inputs.enable-windows }}
           - os: macos-latest
             os-name: macos
             arch: x86_64
             cmake-arch: x86_64
             rtid: osx-x64
             vcpkg-triplet: x64-osx
+            enable: ${{ inputs.enable-macos }}
           - os: macos-latest
             os-name: macos
             arch: arm64
             cmake-arch: arm64
             rtid: osx-arm64
             vcpkg-triplet: arm64-osx
+            enable: ${{ inputs.enable-macos }}
     steps:
       - uses: actions/checkout@v4
-        if: inputs.checkout-self
+        if: matrix.enable == true && inputs.checkout-self
       - uses: actions/checkout@v4
+        if: matrix.enable == true
         with:
           repository: "${{ inputs.repo }}"
           ref: "${{ inputs.repo-tag }}"
           path: "${{ inputs.repo-path }}"
           submodules: true
       - name: Install dependencies on Ubuntu
-        if: matrix.os-name == 'linux'
+        if: matrix.enable == true && matrix.os-name == 'linux'
         run: |
           sudo apt-get update && sudo apt-get install -y ${{ inputs.linux-deps }}
       - name: Install dependencies on macOS
-        if: matrix.os-name == 'macos' && inputs.macos-deps != ''
+        if: matrix.enable == true && matrix.os-name == 'macos' && inputs.macos-deps != ''
         run: |
           brew update
           brew install ${{ inputs.macos-deps }}
       - name: Install dependencies on Windows
-        if: matrix.os-name == 'windows' && inputs.windows-deps != ''
+        if: matrix.enable == true && matrix.os-name == 'windows' && inputs.windows-deps != ''
         run: |
           choco install -y ${{ inputs.windows-deps }}
       - name: Prepare Vulkan SDK
-        if: inputs.setup-vulkan == true && ((inputs.setup-vulkan-macos == true && matrix.os-name == 'macos') || (inputs.setup-vulkan-linux == true && matrix.os-name == 'linux') || (inputs.setup-vulkan-windows == true && matrix.os-name == 'windows'))
+        if: matrix.enable == true && inputs.setup-vulkan == true && ((inputs.setup-vulkan-macos == true && matrix.os-name == 'macos') || (inputs.setup-vulkan-linux == true && matrix.os-name == 'linux') || (inputs.setup-vulkan-windows == true && matrix.os-name == 'windows'))
         uses: humbletim/setup-vulkan-sdk@v1.2.1
         with:
           vulkan-query-version: ${{ inputs.vulkan-version }}
           vulkan-components: ${{ inputs.vulkan-components }}
           vulkan-use-cache: ${{ inputs.vulkan-use-cache }}
       - name: Setup vcpkg
-        if: inputs.use-vcpkg == true && inputs.use-vcpkg-macos == true && matrix.os-name == 'macos' || inputs.use-vcpkg == true && inputs.use-vcpkg-linux == true && matrix.os-name == 'linux' || inputs.use-vcpkg == true && inputs.use-vcpkg-windows == true && matrix.os-name == 'windows'
+        if: matrix.enable == true && ((inputs.use-vcpkg == true && inputs.use-vcpkg-macos == true && matrix.os-name == 'macos') || (inputs.use-vcpkg == true && inputs.use-vcpkg-linux == true && matrix.os-name == 'linux') || (inputs.use-vcpkg == true && inputs.use-vcpkg-windows == true && matrix.os-name == 'windows'))
         shell: bash
         run: |
           cd ${{ inputs.repo-path }}
@@ -304,7 +332,7 @@ jobs:
           ./bootstrap-vcpkg.sh
           ./vcpkg install ${{ inputs.vcpkg-packages }} --triplet "${{ matrix.vcpkg-triplet }}"
       - name: Pre-Configure Setup
-        if: inputs.pre-configure-steps != ''
+        if: matrix.enable == true && inputs.pre-configure-steps != ''
         shell: bash
         run: |
           export GHA_OS="${{matrix.os}}"
@@ -315,7 +343,7 @@ jobs:
           export GHA_CMAKE_VCPKG_TRIPLET="${{matrix.vcpkg-triplet}}"
           ${{ inputs.pre-configure-steps }}
       - name: Configure with CMake for Linux
-        if: matrix.os-name == 'linux'
+        if: matrix.enable == true && matrix.os-name == 'linux'
         run: |
           cd ${{ inputs.repo-path }}
           if [ "${{ inputs.use-vcpkg }}" = "true" ] && [ "${{ inputs.use-vcpkg-linux }}" = "true" ]; then \
@@ -324,7 +352,7 @@ jobs:
             cmake -S . -B ./build ${{ inputs.cmake-flags }} ${{ inputs.cmake-flags-linux }}; \
           fi
       - name: Configure with CMake for macOS
-        if: matrix.os-name == 'macos'
+        if: matrix.enable == true && matrix.os-name == 'macos'
         run: |
           cd ${{ inputs.repo-path }}
           if [ "${{ inputs.use-vcpkg }}" = "true" ] && [ "${{ inputs.use-vcpkg-macos }}" = "true" ]; then \
@@ -333,7 +361,7 @@ jobs:
             cmake -S . -B ./build -DCMAKE_OSX_ARCHITECTURES=${{ matrix.cmake-arch }} ${{ inputs.cmake-flags }} ${{ inputs.cmake-flags-macos }}; \
           fi
       - name: Configure with CMake for Windows
-        if: matrix.os-name == 'windows'
+        if: matrix.enable == true && matrix.os-name == 'windows'
         shell: bash
         run: |
           cd ${{ inputs.repo-path }}
@@ -343,7 +371,7 @@ jobs:
             cmake -S . -B ./build -A ${{ matrix.cmake-arch }} ${{ inputs.cmake-flags }} ${{ inputs.cmake-flags-windows }}; \
           fi
       - name: Pre-Build Setup
-        if: inputs.pre-build-steps != ''
+        if: matrix.enable == true && inputs.pre-build-steps != ''
         shell: bash
         run: |
           export GHA_OS="${{matrix.os}}"
@@ -354,11 +382,12 @@ jobs:
           export GHA_CMAKE_VCPKG_TRIPLET="${{matrix.vcpkg-triplet}}"
           ${{ inputs.pre-build-steps }}
       - name: Build
+        if: matrix.enable == true
         run: |
           cd ${{ inputs.repo-path }}
           cmake --build ./build --config Release
       - name: Post-Build Steps
-        if: inputs.post-build-steps != ''
+        if: matrix.enable == true && inputs.post-build-steps != ''
         shell: bash
         run: |
           export GHA_OS="${{matrix.os}}"
@@ -369,27 +398,28 @@ jobs:
           export GHA_CMAKE_VCPKG_TRIPLET="${{matrix.vcpkg-triplet}}"
           ${{ inputs.post-build-steps }}
       - name: Normalize binaries for macOS
-        if: matrix.os-name == 'macos'
+        if: matrix.enable == true && matrix.os-name == 'macos'
         run: |
           rm -rf ${{ inputs.build-output-dir }}
           mkdir ${{ inputs.build-output-dir }}
           cp -L ${{ inputs.repo-path }}/build/${{ inputs.bin-name-osx }} ${{ inputs.build-output-dir }}/${{ inputs.bin-name-osx-normalized }}
           ls -lha ${{ inputs.build-output-dir }}
       - name: Normalize binaries for Linux
-        if: matrix.os-name == 'linux'
+        if: matrix.enable == true && matrix.os-name == 'linux'
         run: |
           rm -rf ${{ inputs.build-output-dir }}
           mkdir ${{ inputs.build-output-dir }}
           cp -L ${{ inputs.repo-path }}/build/${{ inputs.bin-name-linux }} ${{ inputs.build-output-dir }}/${{ inputs.bin-name-linux-normalized }}
           ls -lha ${{ inputs.build-output-dir }}
       - name: Normalize binaries for Windows
-        if: matrix.os-name == 'windows'
+        if: matrix.enable == true && matrix.os-name == 'windows'
         run: |
           rm -r ${{ inputs.build-output-dir }} -ErrorAction SilentlyContinue
           mkdir ${{ inputs.build-output-dir }}
           cp ${{ inputs.repo-path }}/build/${{ inputs.bin-name-windows }} ${{ inputs.build-output-dir }}/${{ inputs.bin-name-windows-normalized }}
           ls ${{ inputs.build-output-dir }}
       - name: Upload Artifacts
+        if: matrix.enable == true
         uses: actions/upload-artifact@v4
         with:
           name: ${{ inputs.lib-name }}-${{ matrix.rtid }}
@@ -400,6 +430,7 @@ jobs:
           if-no-files-found: error
   build-android:
     runs-on: ubuntu-latest
+    if: inputs.enable-android == true
     strategy:
       matrix:
         include:
@@ -409,24 +440,26 @@ jobs:
             cmake-arch: arm64-v8a
             rtid: android-arm64
             vcpkg-triplet: arm64-android
+            enable: ${{ inputs.enable-android }}
           - os: ubuntu-latest
             os-name: android
             arch: x86_64
             cmake-arch: x86_64
             rtid: android-x64
             vcpkg-triplet: x64-android
-    env:
-      android-cmake-flags: -G "Ninja" -DCMAKE_SYSTEM_NAME=Android -DCMAKE_ANDROID_NDK=$ANDROID_NDK_HOME -DCMAKE_ANDROID_NDK_TOOLCHAIN_VERSION=clang -DCMAKE_ANDROID_STL_TYPE=c++_shared -DANDROID_NDK=$ANDROID_NDK_HOME
+            enable: ${{ inputs.enable-android }}
     steps:
       - uses: actions/checkout@v4
-        if: inputs.checkout-self
+        if: matrix.enable == true && inputs.checkout-self
       - uses: actions/checkout@v4
+        if: matrix.enable == true
         with:
           repository: "${{ inputs.repo }}"
           ref: "${{ inputs.repo-tag }}"
           path: "${{ inputs.repo-path }}"
           submodules: true
       - name: Install dependencies on Ubuntu
+        if: matrix.enable == true
         run: |
           sudo apt-get update
           sudo apt-get install -y build-essential cmake ninja-build
@@ -445,7 +478,7 @@ jobs:
           echo "ANDROID_NDK_HOME=$ANDROID_SDK_ROOT/ndk/${{ inputs.ndk-version}}" >> $GITHUB_ENV
           echo "PATH=$PATH:$ANDROID_SDK_ROOT/ndk/${{ inputs.ndk-version}}" >> $GITHUB_ENV
       - name: Setup vcpkg for Android
-        if: inputs.use-vcpkg == true && inputs.use-vcpkg-android == true
+        if: matrix.enable == true && inputs.use-vcpkg == true && inputs.use-vcpkg-android == true
         run: |
           cd ${{ inputs.repo-path }}
           git clone https://github.com/microsoft/vcpkg.git
@@ -454,7 +487,7 @@ jobs:
           ./vcpkg install ${{ inputs.vcpkg-packages }} --triplet "${{ matrix.vcpkg-triplet }}"
           echo "VCPKG_TOOLCHAIN_FILE=./vcpkg/scripts/buildsystems/vcpkg.cmake" >> $GITHUB_ENV
       - name: Pre-Configure Setup (Android)
-        if: inputs.pre-configure-steps != ''
+        if: matrix.enable == true && inputs.pre-configure-steps != ''
         shell: bash
         run: |
           export GHA_RUNNER_OS="${{ matrix.os }}"
@@ -465,18 +498,19 @@ jobs:
           export GHA_CMAKE_VCPKG_TRIPLET="${{ matrix.vcpkg-triplet }}"
           export GHA_ANDROID_API="${{ inputs.android-api }}"
           export GHA_ANDROID_NDK="${{ inputs.ndk-version }}"
-          export GHA_ANDROID_CMAKE_FLAGS="${{ env.android-cmake-flags }}"
+          export GHA_ANDROID_CMAKE_FLAGS="-G 'Ninja' -DCMAKE_SYSTEM_NAME=Android -DCMAKE_ANDROID_NDK=$ANDROID_NDK_HOME -DCMAKE_ANDROID_NDK_TOOLCHAIN_VERSION=clang -DCMAKE_ANDROID_STL_TYPE=c++_shared -DANDROID_NDK=$ANDROID_NDK_HOME"
           ${{ inputs.pre-configure-steps }}
       - name: Configure
+        if: matrix.enable == true
         run: |
           cd ${{ inputs.repo-path }}
           if [ "${{ inputs.use-vcpkg }}" = "true" ] && [ "${{ inputs.use-vcpkg-android }}" = "true" ]; then \
-            cmake -S . -B ./build ${{ env.android-cmake-flags }} -DCMAKE_ANDROID_ARCH_ABI=${{ matrix.cmake-arch }} -DCMAKE_ANDROID_API=${{ inputs.android-api }} ${{ inputs.cmake-flags }} ${{ inputs.cmake-flags-android }} -DCMAKE_TOOLCHAIN_FILE="./vcpkg/scripts/buildsystems/vcpkg.cmake" -DVCPKG_TARGET_TRIPLET=${{ matrix.vcpkg-triplet }}; \
+            cmake -S . -B ./build -G "Ninja" -DCMAKE_SYSTEM_NAME=Android -DCMAKE_ANDROID_NDK=$ANDROID_NDK_HOME -DCMAKE_ANDROID_NDK_TOOLCHAIN_VERSION=clang -DCMAKE_ANDROID_STL_TYPE=c++_shared -DANDROID_NDK=$ANDROID_NDK_HOME -DCMAKE_ANDROID_ARCH_ABI=${{ matrix.cmake-arch }} -DCMAKE_ANDROID_API=${{ inputs.android-api }} ${{ inputs.cmake-flags }} ${{ inputs.cmake-flags-android }} -DCMAKE_TOOLCHAIN_FILE="./vcpkg/scripts/buildsystems/vcpkg.cmake" -DVCPKG_TARGET_TRIPLET=${{ matrix.vcpkg-triplet }}; \
           else \
-            cmake -S . -B ./build ${{ env.android-cmake-flags }} -DCMAKE_ANDROID_ARCH_ABI=${{ matrix.cmake-arch }} -DCMAKE_ANDROID_API=${{ inputs.android-api }} ${{ inputs.cmake-flags }} ${{ inputs.cmake-flags-android }}; \
+            cmake -S . -B ./build -G "Ninja" -DCMAKE_SYSTEM_NAME=Android -DCMAKE_ANDROID_NDK=$ANDROID_NDK_HOME -DCMAKE_ANDROID_NDK_TOOLCHAIN_VERSION=clang -DCMAKE_ANDROID_STL_TYPE=c++_shared -DANDROID_NDK=$ANDROID_NDK_HOME -DCMAKE_ANDROID_ARCH_ABI=${{ matrix.cmake-arch }} -DCMAKE_ANDROID_API=${{ inputs.android-api }} ${{ inputs.cmake-flags }} ${{ inputs.cmake-flags-android }}; \
           fi
       - name: Pre-Build Setup (Android)
-        if: inputs.pre-build-steps != ''
+        if: matrix.enable == true && inputs.pre-build-steps != ''
         shell: bash
         run: |
           export GHA_RUNNER_OS="${{ matrix.os }}"
@@ -487,14 +521,15 @@ jobs:
           export GHA_CMAKE_VCPKG_TRIPLET="${{ matrix.vcpkg-triplet }}"
           export GHA_ANDROID_API="${{ inputs.android-api }}"
           export GHA_ANDROID_NDK="${{ inputs.ndk-version }}"
-          export GHA_ANDROID_CMAKE_FLAGS="${{ env.android-cmake-flags }}"
+          export GHA_ANDROID_CMAKE_FLAGS="-G 'Ninja' -DCMAKE_SYSTEM_NAME=Android -DCMAKE_ANDROID_NDK=$ANDROID_NDK_HOME -DCMAKE_ANDROID_NDK_TOOLCHAIN_VERSION=clang -DCMAKE_ANDROID_STL_TYPE=c++_shared -DANDROID_NDK=$ANDROID_NDK_HOME"
           ${{ inputs.pre-build-steps }}
       - name: Build
+        if: matrix.enable == true
         run: |
           cd ${{ inputs.repo-path }}
           cmake --build ./build --config Release
       - name: Post-Build Steps (Android)
-        if: inputs.post-build-steps != ''
+        if: matrix.enable == true && inputs.post-build-steps != ''
         shell: bash
         run: |
           export GHA_RUNNER_OS="${{ matrix.os }}"
@@ -505,15 +540,17 @@ jobs:
           export GHA_CMAKE_VCPKG_TRIPLET="${{ matrix.vcpkg-triplet }}"
           export GHA_ANDROID_API="${{ inputs.android-api }}"
           export GHA_ANDROID_NDK="${{ inputs.ndk-version }}"
-          export GHA_ANDROID_CMAKE_FLAGS="${{ env.android-cmake-flags }}"
+          export GHA_ANDROID_CMAKE_FLAGS="-G 'Ninja' -DCMAKE_SYSTEM_NAME=Android -DCMAKE_ANDROID_NDK=$ANDROID_NDK_HOME -DCMAKE_ANDROID_NDK_TOOLCHAIN_VERSION=clang -DCMAKE_ANDROID_STL_TYPE=c++_shared -DANDROID_NDK=$ANDROID_NDK_HOME"
           ${{ inputs.post-build-steps }}
       - name: Normalize binaries for Android
+        if: matrix.enable == true
         run: |
           rm -rf ${{ inputs.build-output-dir }}
           mkdir -p ${{ inputs.build-output-dir }}/${{ matrix.cmake-arch }}
           cp -L ${{ inputs.repo-path }}/build/${{ inputs.bin-name-android }} ${{ inputs.build-output-dir }}/${{ matrix.cmake-arch }}/${{ inputs.bin-name-android-normalized }}
           ls ${{ inputs.build-output-dir }}/${{ matrix.cmake-arch }}
       - name: Upload Artifacts (android-${{ matrix.arch }})
+        if: matrix.enable == true
         uses: actions/upload-artifact@v4
         with:
           name: ${{ inputs.lib-name }}-${{ matrix.rtid }}
