@@ -9,7 +9,7 @@ def resolve_manifest_path(manifest_path: str, repo_root: str) -> str:
     if manifest_path.startswith(repo_root):
         manifest_path = manifest_path[len(repo_root):]
     # If path ends with / or \, treat as directory and append hexa-workflows.json
-    if manifest_path.endswith("/") or manifest_path.endswith("\\"):
+    if manifest_path.endswith("/") or manifest_path.endswith("\\") or os.path.isdir(manifest_path):
         manifest_path = os.path.join(manifest_path, "hexa-workflows.json")
     # If path starts with /, resolve under repo_root (strip leading /)
     if manifest_path.startswith("/"):
