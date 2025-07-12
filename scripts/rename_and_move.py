@@ -8,20 +8,19 @@ from typing import Dict, List, Optional
 def resolve_manifest_path(manifest_path: str, repo_root: str) -> str:
     if manifest_path.startswith(repo_root):
         manifest_path = manifest_path[len(repo_root):]
-    # If path ends with / or \, treat as directory and append hexa-workflows.json
-    if manifest_path.endswith("/") or manifest_path.endswith("\\") or os.path.isdir(manifest_path):
-        manifest_path = os.path.join(manifest_path, "hexa-workflows.json")
-    # If path starts with /, resolve under repo_root (strip leading /)
+        
     if manifest_path.startswith("/"):
-        candidate = os.path.join(repo_root, manifest_path.lstrip("/\\"))
-        if os.path.isfile(candidate):
-            return candidate
-        raise FileNotFoundError(f"Manifest file not found in repo_root: {candidate}")
-    # Otherwise, always resolve under repo_root/hexa-workflows/
-    candidate = os.path.join(repo_root, "hexa-workflows", manifest_path)
+        manifest_path = os.path.join(repo_root, manifest_path)
+    else:
+        manifest_path = os.path.join(repo_root, "hexa-workflows", manifest_path)
+        
+    candidate = manifest_path
+    if manifest_path.endswith("/") or manifest_path.endswith("\\") or os.path.isdir(manifest_path):
+        candidate = os.path.join(manifest_path, "hexa-workflows.json")
+    
     if os.path.isfile(candidate):
         return candidate
-    raise FileNotFoundError(f"Manifest file not found in repo_root/hexa-workflows/: {candidate}")
+    raise FileNotFoundError(f"Manifest file not found in: {manifest_path}")
 
 def main(artifact_dir: str, repo_root: str, manifest_path: str) -> None:
     manifest_path_resolved = resolve_manifest_path(manifest_path, repo_root)
