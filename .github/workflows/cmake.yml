@@ -116,6 +116,26 @@ on:
         required: false
         default: false
         type: boolean
+      use-vcpkg-linux:
+        description: "Set to true to enable vcpkg integration on Linux."
+        required: false
+        default: true
+        type: boolean
+      use-vcpkg-macos:
+        description: "Set to true to enable vcpkg integration on macOS."
+        required: false
+        default: true
+        type: boolean
+      use-vcpkg-windows:
+        description: "Set to true to enable vcpkg integration on Windows."
+        required: false
+        default: true
+        type: boolean
+      use-vcpkg-android:
+        description: "Set to true to enable vcpkg integration on Android."
+        required: false
+        default: true
+        type: boolean
       vcpkg-packages:
         description: "Space-separated list of vcpkg packages to install."
         required: false
@@ -165,6 +185,21 @@ on:
         description: "Whether to setup Vulkan SDK (optional)"
         required: false
         default: false
+        type: boolean
+      setup-vulkan-linux:
+        description: "Whether to setup Vulkan SDK on Linux."
+        required: false
+        default: true
+        type: boolean
+      setup-vulkan-macos:
+        description: "Whether to setup Vulkan SDK on macOS."
+        required: false
+        default: true
+        type: boolean
+      setup-vulkan-windows:
+        description: "Whether to setup Vulkan SDK on Windows."
+        required: false
+        default: true
         type: boolean
       vulkan-version:
         description: "Vulkan SDK version (optional)"
@@ -253,14 +288,14 @@ jobs:
         run: |
           choco install -y ${{ inputs.windows-deps }}
       - name: Prepare Vulkan SDK
-        if: inputs.setup-vulkan == true
+        if: inputs.setup-vulkan == true && ((inputs.setup-vulkan-macos == true && matrix.os-name == 'macos') || (inputs.setup-vulkan-linux == true && matrix.os-name == 'linux') || (inputs.setup-vulkan-windows == true && matrix.os-name == 'windows'))
         uses: humbletim/setup-vulkan-sdk@v1.2.1
         with:
           vulkan-query-version: ${{ inputs.vulkan-version }}
           vulkan-components: ${{ inputs.vulkan-components }}
           vulkan-use-cache: ${{ inputs.vulkan-use-cache }}
       - name: Setup vcpkg
-        if: inputs.use-vcpkg == true
+        if: inputs.use-vcpkg == true && inputs.use-vcpkg-macos == true && matrix.os-name == 'macos' || inputs.use-vcpkg == true && inputs.use-vcpkg-linux == true && matrix.os-name == 'linux' || inputs.use-vcpkg == true && inputs.use-vcpkg-windows == true && matrix.os-name == 'windows'
         shell: bash
         run: |
           cd ${{ inputs.repo-path }}
@@ -283,7 +318,7 @@ jobs:
         if: matrix.os-name == 'linux'
         run: |
           cd ${{ inputs.repo-path }}
-          if [ "${{ inputs.use-vcpkg }}" = "true" ]; then \
+          if [ "${{ inputs.use-vcpkg }}" = "true" ] && [ "${{ inputs.use-vcpkg-linux }}" = "true" ]; then \
             cmake -S . -B ./build ${{ inputs.cmake-flags }} ${{ inputs.cmake-flags-linux }} -DCMAKE_TOOLCHAIN_FILE="./vcpkg/scripts/buildsystems/vcpkg.cmake" -DVCPKG_TARGET_TRIPLET=${{ matrix.vcpkg-triplet }}; \
           else \
             cmake -S . -B ./build ${{ inputs.cmake-flags }} ${{ inputs.cmake-flags-linux }}; \
@@ -292,7 +327,7 @@ jobs:
         if: matrix.os-name == 'macos'
         run: |
           cd ${{ inputs.repo-path }}
-          if [ "${{ inputs.use-vcpkg }}" = "true" ]; then \
+          if [ "${{ inputs.use-vcpkg }}" = "true" ] && [ "${{ inputs.use-vcpkg-macos }}" = "true" ]; then \
             cmake -S . -B ./build -DCMAKE_OSX_ARCHITECTURES=${{ matrix.cmake-arch }} ${{ inputs.cmake-flags }} ${{ inputs.cmake-flags-macos }} -DCMAKE_TOOLCHAIN_FILE="./vcpkg/scripts/buildsystems/vcpkg.cmake" -DVCPKG_TARGET_TRIPLET=${{ matrix.vcpkg-triplet }}; \
           else \
             cmake -S . -B ./build -DCMAKE_OSX_ARCHITECTURES=${{ matrix.cmake-arch }} ${{ inputs.cmake-flags }} ${{ inputs.cmake-flags-macos }}; \
@@ -302,7 +337,7 @@ jobs:
         shell: bash
         run: |
           cd ${{ inputs.repo-path }}
-          if [ "${{ inputs.use-vcpkg }}" = "true" ]; then \
+          if [ "${{ inputs.use-vcpkg }}" = "true" ] && [ "${{ inputs.use-vcpkg-windows }}" = "true" ]; then \
             cmake -S . -B ./build -A ${{ matrix.cmake-arch }} ${{ inputs.cmake-flags }} ${{ inputs.cmake-flags-windows }} -DCMAKE_TOOLCHAIN_FILE="./vcpkg/scripts/buildsystems/vcpkg.cmake" -DVCPKG_TARGET_TRIPLET=${{ matrix.vcpkg-triplet }}; \
           else \
             cmake -S . -B ./build -A ${{ matrix.cmake-arch }} ${{ inputs.cmake-flags }} ${{ inputs.cmake-flags-windows }}; \
@@ -410,7 +445,7 @@ jobs:
           echo "ANDROID_NDK_HOME=$ANDROID_SDK_ROOT/ndk/${{ inputs.ndk-version}}" >> $GITHUB_ENV
           echo "PATH=$PATH:$ANDROID_SDK_ROOT/ndk/${{ inputs.ndk-version}}" >> $GITHUB_ENV
       - name: Setup vcpkg for Android
-        if: inputs.use-vcpkg == true
+        if: inputs.use-vcpkg == true && inputs.use-vcpkg-android == true
         run: |
           cd ${{ inputs.repo-path }}
           git clone https://github.com/microsoft/vcpkg.git
@@ -435,7 +470,7 @@ jobs:
       - name: Configure
         run: |
           cd ${{ inputs.repo-path }}
-          if [ "${{ inputs.use-vcpkg }}" = "true" ]; then \
+          if [ "${{ inputs.use-vcpkg }}" = "true" ] && [ "${{ inputs.use-vcpkg-android }}" = "true" ]; then \
             cmake -S . -B ./build ${{ env.android-cmake-flags }} -DCMAKE_ANDROID_ARCH_ABI=${{ matrix.cmake-arch }} -DCMAKE_ANDROID_API=${{ inputs.android-api }} ${{ inputs.cmake-flags }} ${{ inputs.cmake-flags-android }} -DCMAKE_TOOLCHAIN_FILE="./vcpkg/scripts/buildsystems/vcpkg.cmake" -DVCPKG_TARGET_TRIPLET=${{ matrix.vcpkg-triplet }}; \
           else \
             cmake -S . -B ./build ${{ env.android-cmake-flags }} -DCMAKE_ANDROID_ARCH_ABI=${{ matrix.cmake-arch }} -DCMAKE_ANDROID_API=${{ inputs.android-api }} ${{ inputs.cmake-flags }} ${{ inputs.cmake-flags-android }}; \
