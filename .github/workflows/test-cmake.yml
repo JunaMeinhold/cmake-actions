@@ -11,11 +11,12 @@ jobs:
       lib-name: TestLib
       repo: JunaMeinhold/cmake-actions
       repo-tag: v1.x.x
-      bin-name-linux: testbin
-      bin-name-linux-normalized: testbin
-      bin-name-osx: dummy
-      bin-name-android: dummy
-      bin-name-windows: dummy.exe
-      bin-name-osx-normalized: dummy
-      bin-name-android-normalized: dummy
-      bin-name-windows-normalized: dummy.exe
+      bin-name-linux: dummy.so
+      bin-name-linux-normalized: dummy.so 
+      bin-name-android: dummy.so
+      bin-name-android-normalized: dummy.so
+      bin-name-windows: Release/dummy.dll
+      bin-name-windows-normalized: dummy.dll
+      bin-name-osx: dummy.dylib
+      bin-name-osx-normalized: dummy.dylib
+      use-vcpkg: true
