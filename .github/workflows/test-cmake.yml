@@ -1,4 +1,4 @@
-name: Execute cmake.yml Test
+name: Test Build Workflow
 
 on:
   workflow_dispatch:

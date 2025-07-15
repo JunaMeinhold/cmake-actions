@@ -215,7 +215,7 @@ on:
       vcpkg-triplet-macos:
         description: "Template for vcpkg triplet for macOS, e.g. 'triplet-{arch}'. If set, replaces {arch} with matrix.cmake-arch."
         required: false
-        default: "{arch}-macos"
+        default: "{arch}-osx"
         type: string
       vcpkg-triplet-windows:
         description: "Template for vcpkg triplet for Windows, e.g. 'triplet-{arch}'. If set, replaces {arch} with matrix.cmake-arch."
@@ -325,6 +325,13 @@ jobs:
             vcpkg-triplet: ${{ inputs.vcpkg-triplet-macos }}
             enable: ${{ inputs.enable-macos }}
     steps:
+      - name: Setup environment variables
+        shell: bash
+        run:
+          arch="${{ matrix.vcpkg-arch }}"
+          tpl="${{ matrix.vcpkg-triplet }}"
+          triplet=$(echo "$tpl" | sed "s/{arch}/$arch/g")
+          echo "VCPKG_TRIPLET=$triplet" >> $GITHUB_ENV
       - uses: actions/checkout@v4
         if: matrix.enable == true && inputs.checkout-self
       - uses: actions/checkout@v4
@@ -358,12 +365,6 @@ jobs:
         if: matrix.enable == true && ((inputs.use-vcpkg == true && inputs.use-vcpkg-macos == true && matrix.os-name == 'macos') || (inputs.use-vcpkg == true && inputs.use-vcpkg-linux == true && matrix.os-name == 'linux') || (inputs.use-vcpkg == true && inputs.use-vcpkg-windows == true && matrix.os-name == 'windows'))
         shell: bash
         run: |
-          arch="${{ matrix.vcpkg-arch }}"
-          tpl="${{ matrix.vcpkg-triplet }}"
-          triplet=$(echo "$tpl" | sed "s/{arch}/$arch/g")
-          echo "VCPKG_TRIPLET=$triplet" >> $GITHUB_ENV
-          echo $VCPKG_TRIPLET
-
           cd ${{ inputs.repo-path }}
           git clone https://github.com/microsoft/vcpkg.git
           cd vcpkg
@@ -497,6 +498,13 @@ jobs:
             vcpkg-triplet: ${{ inputs.vcpkg-triplet-android }}
             enable: ${{ inputs.enable-android }}
     steps:
+      - name: Setup environment variables
+        shell: bash
+        run:
+          arch="${{ matrix.vcpkg-arch }}"
+          tpl="${{ matrix.vcpkg-triplet }}"
+          triplet=$(echo "$tpl" | sed "s/{arch}/$arch/g")
+          echo "VCPKG_TRIPLET=$triplet" >> $GITHUB_ENV
       - uses: actions/checkout@v4
         if: matrix.enable == true && inputs.checkout-self
       - uses: actions/checkout@v4
@@ -528,12 +536,6 @@ jobs:
       - name: Setup vcpkg for Android
         if: matrix.enable == true && inputs.use-vcpkg == true && inputs.use-vcpkg-android == true
         run: |
-          arch="${{ matrix.vcpkg-arch }}"
-          tpl="${{ matrix.vcpkg-triplet }}"
-          triplet=$(echo "$tpl" | sed "s/{arch}/$arch/g")
-          echo "VCPKG_TRIPLET=$triplet" >> $GITHUB_ENV
-          echo $VCPKG_TRIPLET
-
           cd ${{ inputs.repo-path }}
           git clone https://github.com/microsoft/vcpkg.git
           cd vcpkg
