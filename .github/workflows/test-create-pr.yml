@@ -41,4 +41,3 @@ jobs:
         lib-version: "v1.2.3"
         pr-branch: "test-artifacts-branch"
         pr-base-branch: "main"
-        pr-output-map: '{"TestLib": "ProjectA/native", "AnotherLib": "ProjectB/native"}'
