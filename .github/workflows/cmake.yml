@@ -365,6 +365,7 @@ jobs:
         if: matrix.enable == true && ((inputs.use-vcpkg == true && inputs.use-vcpkg-macos == true && matrix.os-name == 'macos') || (inputs.use-vcpkg == true && inputs.use-vcpkg-linux == true && matrix.os-name == 'linux') || (inputs.use-vcpkg == true && inputs.use-vcpkg-windows == true && matrix.os-name == 'windows'))
         shell: bash
         run: |
+          echo $VCPKG_TRIPLET
           cd ${{ inputs.repo-path }}
           git clone https://github.com/microsoft/vcpkg.git
           cd vcpkg
@@ -536,6 +537,7 @@ jobs:
       - name: Setup vcpkg for Android
         if: matrix.enable == true && inputs.use-vcpkg == true && inputs.use-vcpkg-android == true
         run: |
+          echo $VCPKG_TRIPLET
           cd ${{ inputs.repo-path }}
           git clone https://github.com/microsoft/vcpkg.git
           cd vcpkg

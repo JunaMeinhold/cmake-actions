@@ -20,3 +20,4 @@ jobs:
       bin-name-osx: dummy.dylib
       bin-name-osx-normalized: dummy.dylib
       use-vcpkg: true
+      vcpkg-packages: utf8cpp
