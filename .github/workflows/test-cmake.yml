@@ -1,0 +1,24 @@
+name: Execute cmake.yml Test
+
+on:
+  workflow_dispatch:
+  pull_request:
+  push:
+    branches: [main, v1.x.x]
+
+jobs:
+  test-cmake-workflow:
+    uses: ./.github/workflows/cmake.yml
+    with:
+      enable-linux: true
+      lib-name: TestLib
+      repo: JunaMeinhold/cmake-actions
+      repo-tag: v1.x.x
+      bin-name-linux: testbin
+      bin-name-linux-normalized: testbin
+      bin-name-osx: dummy
+      bin-name-android: dummy
+      bin-name-windows: dummy.exe
+      bin-name-osx-normalized: dummy
+      bin-name-android-normalized: dummy
+      bin-name-windows-normalized: dummy.exe
