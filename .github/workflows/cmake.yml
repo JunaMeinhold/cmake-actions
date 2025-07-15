@@ -207,6 +207,26 @@ on:
         required: false
         default: ""
         type: string
+      vcpkg-triplet-linux:
+        description: "Template for vcpkg triplet for Linux, e.g. 'triplet-{arch}'. If set, replaces {arch} with matrix.cmake-arch."
+        required: false
+        default: "{arch}-linux"
+        type: string
+      vcpkg-triplet-macos:
+        description: "Template for vcpkg triplet for macOS, e.g. 'triplet-{arch}'. If set, replaces {arch} with matrix.cmake-arch."
+        required: false
+        default: "{arch}-macos"
+        type: string
+      vcpkg-triplet-windows:
+        description: "Template for vcpkg triplet for Windows, e.g. 'triplet-{arch}'. If set, replaces {arch} with matrix.cmake-arch."
+        required: false
+        default: "{arch}-windows"
+        type: string
+      vcpkg-triplet-android:
+        description: "Template for vcpkg triplet for Android, e.g. 'triplet-{arch}'. If set, replaces {arch} with matrix.cmake-arch."
+        required: false
+        default: "{arch}-android"
+        type: string
       setup-vulkan:
         description: "Whether to setup Vulkan SDK (optional)"
         required: false
@@ -242,7 +262,6 @@ on:
         required: false
         default: false
         type: boolean
-
 jobs:
   build:
     runs-on: ${{ matrix.os }}
@@ -254,49 +273,56 @@ jobs:
             arch: x86_64
             cmake-arch: x64
             rtid: linux-x64
-            vcpkg-triplet: x64-linux
+            vcpkg-arch: x64
+            vcpkg-triplet: ${{ inputs.vcpkg-triplet-linux }}
             enable: ${{ inputs.enable-linux }}
           - os: ubuntu-24.04-arm
             os-name: linux
             arch: arm64
             cmake-arch: aarch64
             rtid: linux-arm64
-            vcpkg-triplet: arm64-linux
+            vcpkg-arch: arm64
+            vcpkg-triplet: ${{ inputs.vcpkg-triplet-linux }}
             enable: ${{ inputs.enable-linux }}
           - os: windows-latest
             os-name: windows
             arch: x86_64
             cmake-arch: x64
             rtid: win-x64
-            vcpkg-triplet: x64-windows-static
+            vcpkg-arch: x64
+            vcpkg-triplet: ${{ inputs.vcpkg-triplet-windows }}
             enable: ${{ inputs.enable-windows }}
           - os: windows-latest
             os-name: windows
             arch: x86
             cmake-arch: win32
             rtid: win-x86
-            vcpkg-triplet: x86-windows-static
+            vcpkg-arch: x86
+            vcpkg-triplet: ${{ inputs.vcpkg-triplet-windows }}
             enable: ${{ inputs.enable-windows }}
           - os: windows-latest
             os-name: windows
             arch: arm64
             cmake-arch: arm64
             rtid: win-arm64
-            vcpkg-triplet: arm64-windows-static
+            vcpkg-arch: arm64
+            vcpkg-triplet: ${{ inputs.vcpkg-triplet-windows }}
             enable: ${{ inputs.enable-windows }}
           - os: macos-latest
             os-name: macos
             arch: x86_64
             cmake-arch: x86_64
             rtid: osx-x64
-            vcpkg-triplet: x64-osx
+            vcpkg-arch: x64
+            vcpkg-triplet: ${{ inputs.vcpkg-triplet-macos }}
             enable: ${{ inputs.enable-macos }}
           - os: macos-latest
             os-name: macos
             arch: arm64
             cmake-arch: arm64
             rtid: osx-arm64
-            vcpkg-triplet: arm64-osx
+            vcpkg-arch: arm64
+            vcpkg-triplet: ${{ inputs.vcpkg-triplet-macos }}
             enable: ${{ inputs.enable-macos }}
     steps:
       - uses: actions/checkout@v4
@@ -332,16 +358,21 @@ jobs:
         if: matrix.enable == true && ((inputs.use-vcpkg == true && inputs.use-vcpkg-macos == true && matrix.os-name == 'macos') || (inputs.use-vcpkg == true && inputs.use-vcpkg-linux == true && matrix.os-name == 'linux') || (inputs.use-vcpkg == true && inputs.use-vcpkg-windows == true && matrix.os-name == 'windows'))
         shell: bash
         run: |
+          arch="${{ matrix.vcpkg-arch }}"
+          tpl="${{ matrix.vcpkg-triplet }}"
+          triplet=$(echo "$tpl" | sed "s/{arch}/$arch/g")
+          echo "VCPKG_TRIPLET=$triplet" >> $GITHUB_ENV
+
           cd ${{ inputs.repo-path }}
           git clone https://github.com/microsoft/vcpkg.git
           cd vcpkg
           ./bootstrap-vcpkg.sh
           if [ "${{ matrix.os-name }}" = "linux" ]; then
-            ./vcpkg install ${{ inputs.vcpkg-packages }} ${{ inputs.vcpkg-packages-linux }} --triplet "${{ matrix.vcpkg-triplet }}"
+            ./vcpkg install ${{ inputs.vcpkg-packages }} ${{ inputs.vcpkg-packages-linux }} --triplet "$VCPKG_TRIPLET"
           elif [ "${{ matrix.os-name }}" = "macos" ]; then
-            ./vcpkg install ${{ inputs.vcpkg-packages }} ${{ inputs.vcpkg-packages-macos }} --triplet "${{ matrix.vcpkg-triplet }}"
+            ./vcpkg install ${{ inputs.vcpkg-packages }} ${{ inputs.vcpkg-packages-macos }} --triplet "$VCPKG_TRIPLET"
           elif [ "${{ matrix.os-name }}" = "windows" ]; then
-            ./vcpkg install ${{ inputs.vcpkg-packages }} ${{ inputs.vcpkg-packages-windows }} --triplet "${{ matrix.vcpkg-triplet }}"
+            ./vcpkg install ${{ inputs.vcpkg-packages }} ${{ inputs.vcpkg-packages-windows }} --triplet "$VCPKG_TRIPLET"
           fi
       - name: Pre-Configure Setup
         if: matrix.enable == true && inputs.pre-configure-steps != ''
@@ -352,14 +383,14 @@ jobs:
           export GHA_ARCH="${{matrix.arch}}"
           export GHA_CMAKE_ARCH="${{matrix.cmake-arch}}"
           export GHA_CMAKE_RTID="${{matrix.rtid}}"
-          export GHA_CMAKE_VCPKG_TRIPLET="${{matrix.vcpkg-triplet}}"
+          export GHA_CMAKE_VCPKG_TRIPLET="$VCPKG_TRIPLET"
           ${{ inputs.pre-configure-steps }}
       - name: Configure with CMake for Linux
         if: matrix.enable == true && matrix.os-name == 'linux'
         run: |
           cd ${{ inputs.repo-path }}
           if [ "${{ inputs.use-vcpkg }}" = "true" ] && [ "${{ inputs.use-vcpkg-linux }}" = "true" ]; then \
-            cmake -S . -B ./build ${{ inputs.cmake-flags }} ${{ inputs.cmake-flags-linux }} -DCMAKE_TOOLCHAIN_FILE="./vcpkg/scripts/buildsystems/vcpkg.cmake" -DVCPKG_TARGET_TRIPLET=${{ matrix.vcpkg-triplet }}; \
+            cmake -S . -B ./build ${{ inputs.cmake-flags }} ${{ inputs.cmake-flags-linux }} -DCMAKE_TOOLCHAIN_FILE="./vcpkg/scripts/buildsystems/vcpkg.cmake" -DVCPKG_TARGET_TRIPLET=$VCPKG_TRIPLET; \
           else \
             cmake -S . -B ./build ${{ inputs.cmake-flags }} ${{ inputs.cmake-flags-linux }}; \
           fi
@@ -368,7 +399,7 @@ jobs:
         run: |
           cd ${{ inputs.repo-path }}
           if [ "${{ inputs.use-vcpkg }}" = "true" ] && [ "${{ inputs.use-vcpkg-macos }}" = "true" ]; then \
-            cmake -S . -B ./build -DCMAKE_OSX_ARCHITECTURES=${{ matrix.cmake-arch }} ${{ inputs.cmake-flags }} ${{ inputs.cmake-flags-macos }} -DCMAKE_TOOLCHAIN_FILE="./vcpkg/scripts/buildsystems/vcpkg.cmake" -DVCPKG_TARGET_TRIPLET=${{ matrix.vcpkg-triplet }}; \
+            cmake -S . -B ./build -DCMAKE_OSX_ARCHITECTURES=${{ matrix.cmake-arch }} ${{ inputs.cmake-flags }} ${{ inputs.cmake-flags-macos }} -DCMAKE_TOOLCHAIN_FILE="./vcpkg/scripts/buildsystems/vcpkg.cmake" -DVCPKG_TARGET_TRIPLET=$VCPKG_TRIPLET; \
           else \
             cmake -S . -B ./build -DCMAKE_OSX_ARCHITECTURES=${{ matrix.cmake-arch }} ${{ inputs.cmake-flags }} ${{ inputs.cmake-flags-macos }}; \
           fi
@@ -378,7 +409,7 @@ jobs:
         run: |
           cd ${{ inputs.repo-path }}
           if [ "${{ inputs.use-vcpkg }}" = "true" ] && [ "${{ inputs.use-vcpkg-windows }}" = "true" ]; then \
-            cmake -S . -B ./build -A ${{ matrix.cmake-arch }} ${{ inputs.cmake-flags }} ${{ inputs.cmake-flags-windows }} -DCMAKE_TOOLCHAIN_FILE="./vcpkg/scripts/buildsystems/vcpkg.cmake" -DVCPKG_TARGET_TRIPLET=${{ matrix.vcpkg-triplet }}; \
+            cmake -S . -B ./build -A ${{ matrix.cmake-arch }} ${{ inputs.cmake-flags }} ${{ inputs.cmake-flags-windows }} -DCMAKE_TOOLCHAIN_FILE="./vcpkg/scripts/buildsystems/vcpkg.cmake" -DVCPKG_TARGET_TRIPLET=$VCPKG_TRIPLET; \
           else \
             cmake -S . -B ./build -A ${{ matrix.cmake-arch }} ${{ inputs.cmake-flags }} ${{ inputs.cmake-flags-windows }}; \
           fi
@@ -391,7 +422,7 @@ jobs:
           export GHA_ARCH="${{matrix.arch}}"
           export GHA_CMAKE_ARCH="${{matrix.cmake-arch}}"
           export GHA_CMAKE_RTID="${{matrix.rtid}}"
-          export GHA_CMAKE_VCPKG_TRIPLET="${{matrix.vcpkg-triplet}}"
+          export GHA_CMAKE_VCPKG_TRIPLET="$VCPKG_TRIPLET"
           ${{ inputs.pre-build-steps }}
       - name: Build
         if: matrix.enable == true
@@ -407,7 +438,7 @@ jobs:
           export GHA_ARCH="${{matrix.arch}}"
           export GHA_CMAKE_ARCH="${{matrix.cmake-arch}}"
           export GHA_CMAKE_RTID="${{matrix.rtid}}"
-          export GHA_CMAKE_VCPKG_TRIPLET="${{matrix.vcpkg-triplet}}"
+          export GHA_CMAKE_VCPKG_TRIPLET="$VCPKG_TRIPLET"
           ${{ inputs.post-build-steps }}
       - name: Normalize binaries for macOS
         if: matrix.enable == true && matrix.os-name == 'macos'
@@ -453,14 +484,16 @@ jobs:
             arch: arm64
             cmake-arch: arm64-v8a
             rtid: android-arm64
-            vcpkg-triplet: arm64-android
+            vcpkg-arch: arm64
+            vcpkg-triplet: ${{ inputs.vcpkg-triplet-android }}
             enable: ${{ inputs.enable-android }}
           - os: ubuntu-latest
             os-name: android
             arch: x86_64
             cmake-arch: x86_64
             rtid: android-x64
-            vcpkg-triplet: x64-android
+            vcpkg-arch: x64
+            vcpkg-triplet: ${{ inputs.vcpkg-triplet-android }}
             enable: ${{ inputs.enable-android }}
     steps:
       - uses: actions/checkout@v4
@@ -494,11 +527,16 @@ jobs:
       - name: Setup vcpkg for Android
         if: matrix.enable == true && inputs.use-vcpkg == true && inputs.use-vcpkg-android == true
         run: |
+          arch="${{ matrix.vcpkg-arch }}"
+          tpl="${{ matrix.vcpkg-triplet }}"
+          triplet=$(echo "$tpl" | sed "s/{arch}/$arch/g")
+          echo "VCPKG_TRIPLET=$triplet" >> $GITHUB_ENV
+          
           cd ${{ inputs.repo-path }}
           git clone https://github.com/microsoft/vcpkg.git
           cd vcpkg
           ./bootstrap-vcpkg.sh
-          ./vcpkg install ${{ inputs.vcpkg-packages }} ${{ inputs.vcpkg-packages-android }} --triplet "${{ matrix.vcpkg-triplet }}"
+          ./vcpkg install ${{ inputs.vcpkg-packages }} ${{ inputs.vcpkg-packages-android }} --triplet "$VCPKG_TRIPLET"
           echo "VCPKG_TOOLCHAIN_FILE=./vcpkg/scripts/buildsystems/vcpkg.cmake" >> $GITHUB_ENV
       - name: Pre-Configure Setup (Android)
         if: matrix.enable == true && inputs.pre-configure-steps != ''
@@ -509,17 +547,17 @@ jobs:
           export GHA_ARCH="${{ matrix.arch }}"
           export GHA_CMAKE_ARCH="${{ matrix.cmake-arch }}"
           export GHA_CMAKE_RTID="${{ matrix.rtid }}"
-          export GHA_CMAKE_VCPKG_TRIPLET="${{ matrix.vcpkg-triplet }}"
+          export GHA_CMAKE_VCPKG_TRIPLET="$VCPKG_TRIPLET"
           export GHA_ANDROID_API="${{ inputs.android-api }}"
           export GHA_ANDROID_NDK="${{ inputs.ndk-version }}"
           export GHA_ANDROID_CMAKE_FLAGS="${{ env.android-cmake-flags }}"
           ${{ inputs.pre-configure-steps }}
       - name: Configure
-        if: matrix.enable == true
+        if: matrix.enable == true && matrix.os-name == 'android'
         run: |
           cd ${{ inputs.repo-path }}
           if [ "${{ inputs.use-vcpkg }}" = "true" ] && [ "${{ inputs.use-vcpkg-android }}" = "true" ]; then \
-            cmake -S . -B ./build ${{ env.android-cmake-flags }} -DCMAKE_ANDROID_ARCH_ABI=${{ matrix.cmake-arch }} -DCMAKE_ANDROID_API=${{ inputs.android-api }} ${{ inputs.cmake-flags }} ${{ inputs.cmake-flags-android }} -DCMAKE_TOOLCHAIN_FILE="./vcpkg/scripts/buildsystems/vcpkg.cmake" -DVCPKG_TARGET_TRIPLET=${{ matrix.vcpkg-triplet }}; \
+            cmake -S . -B ./build ${{ env.android-cmake-flags }} -DCMAKE_ANDROID_ARCH_ABI=${{ matrix.cmake-arch }} -DCMAKE_ANDROID_API=${{ inputs.android-api }} ${{ inputs.cmake-flags }} ${{ inputs.cmake-flags-android }} -DCMAKE_TOOLCHAIN_FILE="./vcpkg/scripts/buildsystems/vcpkg.cmake" -DVCPKG_TARGET_TRIPLET=$VCPKG_TRIPLET; \
           else \
             cmake -S . -B ./build ${{ env.android-cmake-flags }} -DCMAKE_ANDROID_ARCH_ABI=${{ matrix.cmake-arch }} -DCMAKE_ANDROID_API=${{ inputs.android-api }} ${{ inputs.cmake-flags }} ${{ inputs.cmake-flags-android }}; \
           fi
@@ -532,7 +570,7 @@ jobs:
           export GHA_ARCH="${{ matrix.arch }}"
           export GHA_CMAKE_ARCH="${{ matrix.cmake-arch }}"
           export GHA_CMAKE_RTID="${{ matrix.rtid }}"
-          export GHA_CMAKE_VCPKG_TRIPLET="${{ matrix.vcpkg-triplet }}"
+          export GHA_CMAKE_VCPKG_TRIPLET="$VCPKG_TRIPLET"
           export GHA_ANDROID_API="${{ inputs.android-api }}"
           export GHA_ANDROID_NDK="${{ inputs.ndk-version }}"
           export GHA_ANDROID_CMAKE_FLAGS="${{ env.android-cmake-flags }}"
@@ -551,7 +589,7 @@ jobs:
           export GHA_ARCH="${{ matrix.arch }}"
           export GHA_CMAKE_ARCH="${{ matrix.cmake-arch }}"
           export GHA_CMAKE_RTID="${{ matrix.rtid }}"
-          export GHA_CMAKE_VCPKG_TRIPLET="${{ matrix.vcpkg-triplet }}"
+          export GHA_CMAKE_VCPKG_TRIPLET="$VCPKG_TRIPLET"
           export GHA_ANDROID_API="${{ inputs.android-api }}"
           export GHA_ANDROID_NDK="${{ inputs.ndk-version }}"
           export GHA_ANDROID_CMAKE_FLAGS="${{ env.android-cmake-flags }}"
