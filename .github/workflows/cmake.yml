@@ -327,14 +327,12 @@ jobs:
     steps:
       - name: Setup environment variables
         shell: bash
-        run:
+        run: |
           arch="${{ matrix.vcpkg-arch }}"
           tpl="${{ matrix.vcpkg-triplet }}"
           triplet=$(echo "$tpl" | sed "s/{arch}/$arch/g")
           echo "VCPKG_TRIPLET=$triplet" >> $GITHUB_ENV
-          echo $arch
-          echo $tpl
-          echo $triplet
+          echo "DEBUG: arch=$arch tpl=$tpl triplet=$triplet"
       - uses: actions/checkout@v4
         if: matrix.enable == true && inputs.checkout-self
       - uses: actions/checkout@v4
@@ -510,7 +508,6 @@ jobs:
           triplet=$(echo "$tpl" | sed "s/{arch}/$arch/g")
           echo "VCPKG_TRIPLET=$triplet" >> $GITHUB_ENV
           echo "DEBUG: arch=$arch tpl=$tpl triplet=$triplet"
-          
       - uses: actions/checkout@v4
         if: matrix.enable == true && inputs.checkout-self
       - uses: actions/checkout@v4
@@ -542,7 +539,6 @@ jobs:
       - name: Setup vcpkg for Android
         if: matrix.enable == true && inputs.use-vcpkg == true && inputs.use-vcpkg-android == true
         run: |
-          echo "DEBUG: VCPKG_TRIPLET is $VCPKG_TRIPLET"
           cd ${{ inputs.repo-path }}
           git clone https://github.com/microsoft/vcpkg.git
           cd vcpkg
