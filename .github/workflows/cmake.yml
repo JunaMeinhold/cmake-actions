@@ -362,11 +362,12 @@ jobs:
           tpl="${{ matrix.vcpkg-triplet }}"
           triplet=$(echo "$tpl" | sed "s/{arch}/$arch/g")
           echo "VCPKG_TRIPLET=$triplet" >> $GITHUB_ENV
+          echo $VCPKG_TRIPLET
 
           cd ${{ inputs.repo-path }}
           git clone https://github.com/microsoft/vcpkg.git
           cd vcpkg
-          ./bootstrap-vcpkg.sh
+          ./bootstrap-vcpkg.sh -disableMetrics
           if [ "${{ matrix.os-name }}" = "linux" ]; then
             ./vcpkg install ${{ inputs.vcpkg-packages }} ${{ inputs.vcpkg-packages-linux }} --triplet "$VCPKG_TRIPLET"
           elif [ "${{ matrix.os-name }}" = "macos" ]; then
@@ -531,11 +532,12 @@ jobs:
           tpl="${{ matrix.vcpkg-triplet }}"
           triplet=$(echo "$tpl" | sed "s/{arch}/$arch/g")
           echo "VCPKG_TRIPLET=$triplet" >> $GITHUB_ENV
-          
+          echo $VCPKG_TRIPLET
+
           cd ${{ inputs.repo-path }}
           git clone https://github.com/microsoft/vcpkg.git
           cd vcpkg
-          ./bootstrap-vcpkg.sh
+          ./bootstrap-vcpkg.sh -disableMetrics
           ./vcpkg install ${{ inputs.vcpkg-packages }} ${{ inputs.vcpkg-packages-android }} --triplet "$VCPKG_TRIPLET"
           echo "VCPKG_TOOLCHAIN_FILE=./vcpkg/scripts/buildsystems/vcpkg.cmake" >> $GITHUB_ENV
       - name: Pre-Configure Setup (Android)
