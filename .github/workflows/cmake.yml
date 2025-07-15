@@ -332,6 +332,9 @@ jobs:
           tpl="${{ matrix.vcpkg-triplet }}"
           triplet=$(echo "$tpl" | sed "s/{arch}/$arch/g")
           echo "VCPKG_TRIPLET=$triplet" >> $GITHUB_ENV
+          echo $arch
+          echo $tpl
+          echo $triplet
       - uses: actions/checkout@v4
         if: matrix.enable == true && inputs.checkout-self
       - uses: actions/checkout@v4
@@ -506,6 +509,9 @@ jobs:
           tpl="${{ matrix.vcpkg-triplet }}"
           triplet=$(echo "$tpl" | sed "s/{arch}/$arch/g")
           echo "VCPKG_TRIPLET=$triplet" >> $GITHUB_ENV
+          echo $arch
+          echo $tpl
+          echo $triplet
       - uses: actions/checkout@v4
         if: matrix.enable == true && inputs.checkout-self
       - uses: actions/checkout@v4
