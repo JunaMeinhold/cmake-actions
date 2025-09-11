@@ -471,9 +471,7 @@ jobs:
         with:
           name: ${{ inputs.lib-name }}-${{ matrix.rtid }}
           path: |
-            ${{ inputs.build-output-dir }}/*.dll
-            ${{ inputs.build-output-dir }}/*.so
-            ${{ inputs.build-output-dir }}/*.dylib
+            ${{ inputs.build-output-dir }}/*.*
           if-no-files-found: error
   build-android:
     env:
@@ -613,5 +611,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ${{ inputs.lib-name }}-${{ matrix.rtid }}
-          path: ${{ inputs.build-output-dir }}/${{ matrix.cmake-arch }}/*.so
+          path: ${{ inputs.build-output-dir }}/${{ matrix.cmake-arch }}/*.*
           if-no-files-found: error
