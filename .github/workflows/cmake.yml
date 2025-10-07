@@ -112,6 +112,11 @@ on:
         required: false
         default: ""
         type: string
+      pre-deps-steps:
+        description: "Commands to run before dependency installation (optional)"
+        required: false
+        default: ""
+        type: string
       pre-configure-steps:
         description: "Commands to run before CMake configure (optional)"
         required: false
@@ -342,6 +347,17 @@ jobs:
           ref: "${{ inputs.repo-tag }}"
           path: "${{ inputs.repo-path }}"
           submodules: true
+      - name: Pre-Dependency Setup
+        if: matrix.enable == true && inputs.pre-deps-steps != ''
+        shell: bash
+        run: |
+          export GHA_OS="${{matrix.os}}"
+          export GHA_OS_NAME="${{matrix.os-name}}"
+          export GHA_ARCH="${{matrix.arch}}"
+          export GHA_CMAKE_ARCH="${{matrix.cmake-arch}}"
+          export GHA_CMAKE_RTID="${{matrix.rtid}}"
+          export GHA_CMAKE_VCPKG_TRIPLET="$VCPKG_TRIPLET"
+          ${{ inputs.pre-deps-steps }}
       - name: Install dependencies on Ubuntu
         if: matrix.enable == true && matrix.os-name == 'linux'
         run: |
@@ -515,6 +531,20 @@ jobs:
           ref: "${{ inputs.repo-tag }}"
           path: "${{ inputs.repo-path }}"
           submodules: true
+      - name: Pre-Dependency Setup
+        if: matrix.enable == true && inputs.pre-deps-steps != ''
+        shell: bash
+        run: |
+          export GHA_RUNNER_OS="${{ matrix.os }}"
+          export GHA_OS_NAME="${{ matrix.os-name }}"
+          export GHA_ARCH="${{ matrix.arch }}"
+          export GHA_CMAKE_ARCH="${{ matrix.cmake-arch }}"
+          export GHA_CMAKE_RTID="${{ matrix.rtid }}"
+          export GHA_CMAKE_VCPKG_TRIPLET="$VCPKG_TRIPLET"
+          export GHA_ANDROID_API="${{ inputs.android-api }}"
+          export GHA_ANDROID_NDK="${{ inputs.ndk-version }}"
+          export GHA_ANDROID_CMAKE_FLAGS="${{ env.android-cmake-flags }}"
+          ${{ inputs.pre-deps-steps }}
       - name: Install dependencies on Ubuntu
         if: matrix.enable == true
         run: |
