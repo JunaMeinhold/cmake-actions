@@ -87,6 +87,11 @@ on:
         required: false
         default: artifacts
         type: string
+      cmake-version:
+        description: "The CMake version"
+        required: false
+        default: "~4.3.0"
+        type: string
       cmake-flags:
         description: "CMake flags"
         required: false
@@ -371,6 +376,10 @@ jobs:
         if: matrix.enable == true && matrix.os-name == 'windows' && inputs.windows-deps != ''
         run: |
           choco install -y ${{ inputs.windows-deps }}
+      - uses: lukka/get-cmake@latest
+        with:
+          cmakeVersion: ${{ inputs.cmake-version }}
+          ninjaVersion: latest
       - name: Prepare Vulkan SDK
         if: matrix.enable == true && inputs.setup-vulkan == true && ((inputs.setup-vulkan-macos == true && matrix.os-name == 'macos') || (inputs.setup-vulkan-linux == true && matrix.os-name == 'linux') || (inputs.setup-vulkan-windows == true && matrix.os-name == 'windows'))
         uses: humbletim/setup-vulkan-sdk@v1.2.1
